@@ -80,7 +80,7 @@
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^7.0.1",
 		"@sveltejs/kit": "^2.57.0",
-		"@sveltejs/package": "^3.0.1",
+		"@sveltejs/package": "^2.5.8",
 		"@sveltejs/vite-plugin-svelte": "^7.3.1",
 		"@types/d3-force": "^3.0.10",
 		"@types/d3-selection": "^3.0.12",
