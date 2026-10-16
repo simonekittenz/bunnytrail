@@ -80,31 +80,31 @@
 	"devDependencies": {
 		"@sveltejs/adapter-auto": "^7.0.1",
 		"@sveltejs/kit": "^2.57.0",
-		"@sveltejs/package": "^2.5.7",
-		"@sveltejs/vite-plugin-svelte": "^7.0.0",
+		"@sveltejs/package": "^3.0.1",
+		"@sveltejs/vite-plugin-svelte": "^7.3.1",
 		"@types/d3-force": "^3.0.10",
-		"@types/d3-selection": "^3.0.11",
-		"@types/d3-zoom": "^3.0.8",
-		"@types/node": "^22.10.0",
-		"prettier": "^3.4.0",
-		"prettier-plugin-svelte": "^3.3.0",
-		"svelte": "^5.55.2",
+		"@types/d3-selection": "^3.0.12",
+		"@types/d3-zoom": "^3.0.9",
+		"@types/node": "^22.20.5",
+		"prettier": "^3.9.10",
+		"prettier-plugin-svelte": "^4.1.1",
+		"svelte": "^5.57.2",
 		"svelte-check": "^4.4.6",
 		"typescript": "^6.0.2",
-		"vite": "^8.0.7",
-		"vitest": "^4.1.8",
-		"vm2": "^3.11.8"
+		"vite": "^8.3.4",
+		"vitest": "^5.0.5",
+		"vm2": "^3.12.2"
 	},
 	"dependencies": {
 		"@vercel/analytics": "^2.0.1",
-		"chokidar": "^4.0.0",
+		"chokidar": "^5.0.0",
 		"d3-force": "^3.0.0",
 		"d3-selection": "^3.0.0",
 		"d3-zoom": "^3.0.0",
-		"dotenv": "^17.4.2",
-		"marked": "^15.0.0",
+		"dotenv": "^18.0.8",
+		"marked": "^18.1.1",
 		"node-fetch": "^3.3.2",
-		"tsx": "^4.22.3",
-		"yaml": "^2.6.0"
+		"tsx": "^4.23.15",
+		"yaml": "^2.9.1"
 	}
 }
