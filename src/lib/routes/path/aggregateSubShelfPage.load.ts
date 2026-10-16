@@ -107,6 +107,7 @@ export function loadAggregateSubShelfPage(shelf: string, subShelf: string) {
 				description: childDescription,
 				rank: null as number | null,
 				count: combined.count,
+				dateRange: null as string | null,
 				kindCounts: combined.kindCounts,
 				tags,
 				tagsByKind: {} as Record<string, Array<{ label: string; count: number }>>,
