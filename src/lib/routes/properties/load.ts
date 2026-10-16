@@ -1,5 +1,5 @@
-import { graph } from '$lib/server/graph';
-import type { PropertySchema } from '$lib/types';
+import { graph } from '#lib/server/graph.js';
+import type { PropertySchema } from '#lib/types.js';
 
 export interface PropertyIndexEntry {
 	id: string;

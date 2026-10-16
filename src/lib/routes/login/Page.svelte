@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { LoginData } from './load';
 	import { tick } from 'svelte';
-	import { t } from '$lib/i18n';
+	import { t } from '#lib/i18n.js';
 
 	let { data }: { data: LoginData } = $props();
 

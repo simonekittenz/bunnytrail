@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit';
-import { graph, byRankThenName } from '$lib/server/graph';
-import { inverseLabelFor } from '$lib/server/kindLinkLabels';
-import { renderSummary } from '$lib/server/markdown';
-import type { Entity } from '$lib/types';
-import type { ClusterScope } from '$lib/cluster';
+import { graph, byRankThenName } from '#lib/server/graph.js';
+import { inverseLabelFor } from '#lib/server/kindLinkLabels.js';
+import { renderSummary } from '#lib/server/markdown.js';
+import type { Entity } from '#lib/types.js';
+import type { ClusterScope } from '#lib/cluster.js';
 
 export interface KindCard {
 	id: string;

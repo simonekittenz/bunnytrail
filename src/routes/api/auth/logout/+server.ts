@@ -1,1 +1,1 @@
-export { POST } from '$lib/routes/auth/logout';
+export { POST } from '#lib/routes/auth/logout.js';

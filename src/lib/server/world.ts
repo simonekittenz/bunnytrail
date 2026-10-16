@@ -1,6 +1,6 @@
 import { readFile, stat } from 'node:fs/promises';
 import { parse as parseYaml } from 'yaml';
-import type { EraConfig, EraDef, ClusterEras, HealthIssue } from '$lib/types';
+import type { EraConfig, EraDef, ClusterEras, HealthIssue } from '#lib/types.js';
 import { defaultWorldConfigPath } from './globals';
 import { splitFrontmatter } from './frontmatter';
 import { renderPlainBody, type LinkResolver } from './markdown';

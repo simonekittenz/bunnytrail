@@ -2,8 +2,8 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import type { Dirent } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parse as parseYaml } from 'yaml';
-import type { HealthIssue, Kind, Ontology, KindMeta, RelationRegistry, RelationSchema, PropertyRegistry } from '$lib/types';
-import { titleCaseSlug } from '$lib/types';
+import type { HealthIssue, Kind, Ontology, KindMeta, RelationRegistry, RelationSchema, PropertyRegistry } from '#lib/types.js';
+import { titleCaseSlug } from '#lib/types.js';
 import { defaultKindsDir } from './globals';
 
 const KIND_ID_RE = /^[a-z][a-z0-9-]*$/;

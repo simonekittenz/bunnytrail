@@ -1,9 +1,9 @@
-import { graph, rankComparator } from '$lib/server/graph';
-import { world } from '$lib/server/world';
-import { inlineSvgFigures } from '$lib/server/inlineSvgs';
-import { makeCollectionResolver, renderBody, renderSummary } from '$lib/server/markdown';
-import { type Entity, type EntityId, type RankDisplay } from '$lib/types';
-import { formatCalendarRange } from '$lib/calendar';
+import { graph, rankComparator } from '#lib/server/graph.js';
+import { world } from '#lib/server/world.js';
+import { inlineSvgFigures } from '#lib/server/inlineSvgs.js';
+import { makeCollectionResolver, renderBody, renderSummary } from '#lib/server/markdown.js';
+import { type Entity, type EntityId, type RankDisplay } from '#lib/types.js';
+import { formatCalendarRange } from '#lib/calendar.js';
 import {
 	buildLoaderKindTree,
 	buildOrbitsTree,

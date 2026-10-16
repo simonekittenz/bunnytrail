@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { StatBlock, PopulationSlice, SubGroupEntry, SubGroupBlock } from '$lib/routes/path/entityPage.load';
+	import type { StatBlock, PopulationSlice, SubGroupEntry, SubGroupBlock } from '#lib/routes/path/entityPage.load.js';
 	import { SvelteMap } from 'svelte/reactivity';
 
 	interface Props {

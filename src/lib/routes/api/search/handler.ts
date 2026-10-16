@@ -1,4 +1,4 @@
-import { graph } from '$lib/server/graph';
+import { graph } from '#lib/server/graph.js';
 import type { RequestHandler } from '@sveltejs/kit';
 
 /**

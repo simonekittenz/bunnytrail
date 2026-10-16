@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
-import { graph } from '$lib/server/graph';
-import { renderSummary } from '$lib/server/markdown';
+import { graph } from '#lib/server/graph.js';
+import { renderSummary } from '#lib/server/markdown.js';
 
 export async function load({ params }: { params: { tag: string } }) {
 	await graph.ready();

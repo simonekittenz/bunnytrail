@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { t } from '$lib/i18n';
+	import { t } from '#lib/i18n.js';
 	import type { GuidesIndexData } from './load';
 
 	let { data }: { data: GuidesIndexData } = $props();

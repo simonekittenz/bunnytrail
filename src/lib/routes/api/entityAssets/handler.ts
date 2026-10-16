@@ -1,9 +1,9 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { error } from '@sveltejs/kit';
-import { graph } from '$lib/server/graph';
-import { CONTENT_DIR } from '$lib/server/globals';
-import { IMAGE_EXTENSIONS } from '$lib/server/markdown';
+import { graph } from '#lib/server/graph.js';
+import { CONTENT_DIR } from '#lib/server/globals.js';
+import { IMAGE_EXTENSIONS } from '#lib/server/markdown.js';
 
 /**
  * GET /api/entity-assets/<folder-path>/<filename>

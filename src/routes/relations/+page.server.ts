@@ -1,1 +1,1 @@
-export { load } from '$lib/routes/relations/load';
+export { load } from '#lib/routes/relations/load.js';

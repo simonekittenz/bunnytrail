@@ -1,4 +1,4 @@
-import { graph } from '$lib/server/graph';
+import { graph } from '#lib/server/graph.js';
 import { loadKindsIndexPage } from './kindsIndexPage.load';
 
 export type { KindNode, OntologySection, KindsIndexPageData } from './kindsIndexPage.load';

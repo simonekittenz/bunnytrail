@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { t } from '$lib/i18n';
-	import EntityCard from '$lib/components/EntityCard.svelte';
-	import EntityLink from '$lib/components/EntityLink.svelte';
+	import { t } from '#lib/i18n.js';
+	import EntityCard from '#lib/components/EntityCard.svelte';
+	import EntityLink from '#lib/components/EntityLink.svelte';
 	import type { KindCard, KindRefSection, KindSliceNode } from './load';
 
 	let {

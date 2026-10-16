@@ -1,1 +1,1 @@
-export { load } from '$lib/routes/blog/layoutLoad';
+export { load } from '#lib/routes/blog/layoutLoad.js';

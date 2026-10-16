@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { t } from '$lib/i18n';
+	import { t } from '#lib/i18n.js';
 	import type { TagPageData } from './load';
-	import EntityCard from '$lib/components/EntityCard.svelte';
-	import PageHeader from '$lib/components/PageHeader.svelte';
+	import EntityCard from '#lib/components/EntityCard.svelte';
+	import PageHeader from '#lib/components/PageHeader.svelte';
 
 	let { data }: { data: TagPageData } = $props();
 

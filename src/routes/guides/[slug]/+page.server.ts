@@ -1,1 +1,1 @@
-export { load } from '$lib/routes/guides/slug/load';
+export { load } from '#lib/routes/guides/slug/load.js';

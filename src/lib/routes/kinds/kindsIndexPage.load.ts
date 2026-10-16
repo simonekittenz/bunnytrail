@@ -1,6 +1,6 @@
-import { graph } from '$lib/server/graph';
-import { titleCaseSlug } from '$lib/types';
-import type { ClusterScope } from '$lib/cluster';
+import { graph } from '#lib/server/graph.js';
+import { titleCaseSlug } from '#lib/types.js';
+import type { ClusterScope } from '#lib/cluster.js';
 
 export interface KindNode {
 	kind: string;

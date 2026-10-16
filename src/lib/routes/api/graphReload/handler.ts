@@ -1,5 +1,5 @@
 import { dev } from '$app/env';
-import { graph } from '$lib/server/graph';
+import { graph } from '#lib/server/graph.js';
 
 /**
  * GET /api/graph-reload

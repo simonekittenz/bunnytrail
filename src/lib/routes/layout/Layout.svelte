@@ -1,17 +1,17 @@
 <script lang="ts">
-	import '$lib/styles/global.css';
+	import '#lib/styles/global.css';
 
 	import { page } from '$app/state';
 	import { beforeNavigate, afterNavigate, goto, refreshAll } from '$app/navigation';
 	import { browser, dev } from '$app/env';
 	import { onMount, setContext } from 'svelte';
 	import { injectAnalytics } from '@vercel/analytics/sveltekit';
-	import { t } from '$lib/i18n';
-	import { paintAllScope, paintMode, readMode, translateUrl, type ScopeContext, type ViewMode } from '$lib/cluster';
-	import SvgLightbox from '$lib/components/SvgLightbox.svelte';
-	import SearchOverlay from '$lib/components/SearchOverlay.svelte';
+	import { t } from '#lib/i18n.js';
+	import { paintAllScope, paintMode, readMode, translateUrl, type ScopeContext, type ViewMode } from '#lib/cluster.js';
+	import SvgLightbox from '#lib/components/SvgLightbox.svelte';
+	import SearchOverlay from '#lib/components/SearchOverlay.svelte';
 	import type { Snippet } from 'svelte';
-	import type { EraDef, EraConfig } from '$lib/types';
+	import type { EraDef, EraConfig } from '#lib/types.js';
 
 	interface Props {
 		data: {
@@ -261,7 +261,7 @@
 
 		if (target.href === nav.to.url.href) return;
 		nav.cancel();
-		goto(target.href, { replaceState: false, keepFocus: true });
+		goto(target.href, { reset: false });
 	});
 
 	function switchCluster(value: string) {
@@ -282,7 +282,7 @@
 	}
 
 	function switchEra(ref: string | null) {
-		const u = new URL(page.url);
+		const u = new URL(page.url.href);
 		if (ref) u.searchParams.set('era', ref);
 		else u.searchParams.delete('era');
 		bypassEraCarry = true;
@@ -292,7 +292,7 @@
 	}
 
 	function switchMode(mode: ViewMode) {
-		const u = new URL(page.url);
+		const u = new URL(page.url.href);
 		if (mode === 'visitor') {
 			u.searchParams.delete('mode');
 		} else {

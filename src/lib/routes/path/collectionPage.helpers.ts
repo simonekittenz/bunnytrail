@@ -7,10 +7,10 @@
  * via `CollectionPageData` (re-exported from `collectionPage.load.ts`).
  */
 
-import { graph, rankComparator } from '$lib/server/graph';
-import { world } from '$lib/server/world';
-import { toAbsoluteDay, formatCalendarRange, type CalendarDate } from '$lib/calendar';
-import { buildKindTree, type Entity, type EntityId, type KindTree } from '$lib/types';
+import { graph, rankComparator } from '#lib/server/graph.js';
+import { world } from '#lib/server/world.js';
+import { toAbsoluteDay, formatCalendarRange, type CalendarDate } from '#lib/calendar.js';
+import { buildKindTree, type Entity, type EntityId, type KindTree } from '#lib/types.js';
 
 // ---------------------------------------------------------------------------
 // Public types consumed by CollectionPage.svelte and the loaders

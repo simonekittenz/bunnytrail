@@ -1,4 +1,4 @@
-import type { Collection, Entity, EntityId, HealthIssue, Kind, PropertyRegistry, RelationRegistry } from '$lib/types';
+import type { Collection, Entity, EntityId, HealthIssue, Kind, PropertyRegistry, RelationRegistry } from '#lib/types.js';
 import { extractUnlabelledWikilinks, extractWikilinks, resolveWikilink } from './wikilinks';
 
 /**

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { t } from '$lib/i18n';
+	import { t } from '#lib/i18n.js';
 	import type { SourcesData } from './load';
-	import EntityLink from '$lib/components/EntityLink.svelte';
+	import EntityLink from '#lib/components/EntityLink.svelte';
 
 	let { data }: { data: SourcesData } = $props();
 

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { t } from '$lib/i18n';
+	import { t } from '#lib/i18n.js';
 	import type { BlogPostData } from './load';
-	import Tag from '$lib/components/Tag.svelte';
+	import Tag from '#lib/components/Tag.svelte';
 
 	let { data }: { data: BlogPostData } = $props();
 

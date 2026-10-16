@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { t } from '$lib/i18n';
+	import { t } from '#lib/i18n.js';
 	import type { ChapterPageData } from './chapterPage.load';
 
 	let { data }: { data: ChapterPageData } = $props();

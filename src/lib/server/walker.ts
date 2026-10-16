@@ -16,9 +16,9 @@ import type {
 	Timeline,
 	TimelineEntry,
 	TimelineMeta
-} from '$lib/types';
+} from '#lib/types.js';
 import type { CustomCalendarsConfig } from './world';
-import { calendarDateFromRaw, parseCalendarDate, toAbsoluteDay } from '$lib/calendar';
+import { calendarDateFromRaw, parseCalendarDate, toAbsoluteDay } from '#lib/calendar.js';
 import { splitFrontmatter } from './frontmatter';
 import { extractKindLinks, extractKindRefs, extractWikilinks } from './wikilinks';
 
@@ -526,7 +526,7 @@ async function walkTimelinesDir(
 				// ordinal prefix). Non-numeric folders need an explicit `year:`
 				// or `date:` field.
 				let year: number;
-				let calendarDate: import('$lib/calendar').CalendarDate | undefined;
+				let calendarDate: import('#lib/calendar.js').CalendarDate | undefined;
 				const childIsYearFolder = /^-?\d+$/.test(childName);
 				const folderYear = childIsYearFolder ? parseInt(childName, 10) : NaN;
 

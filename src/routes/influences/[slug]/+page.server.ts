@@ -1,1 +1,1 @@
-export { load } from '$lib/routes/influences/slug/load';
+export { load } from '#lib/routes/influences/slug/load.js';

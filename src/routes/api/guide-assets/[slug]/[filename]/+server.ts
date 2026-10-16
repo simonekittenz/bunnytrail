@@ -1,1 +1,1 @@
-export { GET, prerender, entries } from '$lib/routes/api/guideAssets/handler';
+export { GET, prerender, entries } from '#lib/routes/api/guideAssets/handler.js';

@@ -9,10 +9,5 @@ export default defineConfig({
 	test: {
 		include: ['src/**/*.{test,spec}.ts'],
 		environment: 'node'
-	},
-	resolve: {
-		alias: {
-			$lib: new URL('./src/lib', import.meta.url).pathname
-		}
 	}
 });

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { t } from '$lib/i18n';
-	import PageHeader from '$lib/components/PageHeader.svelte';
+	import { t } from '#lib/i18n.js';
+	import PageHeader from '#lib/components/PageHeader.svelte';
 	import type { RelationsIndexPageData } from './load';
 
 	let { data }: { data: RelationsIndexPageData } = $props();

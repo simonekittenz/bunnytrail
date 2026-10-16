@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
-import { blog, formatPostDate } from '$lib/server/blog';
-import { renderPlainBody } from '$lib/server/markdown';
+import { blog, formatPostDate } from '#lib/server/blog.js';
+import { renderPlainBody } from '#lib/server/markdown.js';
 
 /**
  * Tell the prerender crawler exactly which blog slugs to render.

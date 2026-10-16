@@ -1,7 +1,7 @@
-import { graph } from '$lib/server/graph';
-import { renderSummary } from '$lib/server/markdown';
-import { world } from '$lib/server/world';
-import { type EntityId, type RankDisplay } from '$lib/types';
+import { graph } from '#lib/server/graph.js';
+import { renderSummary } from '#lib/server/markdown.js';
+import { world } from '#lib/server/world.js';
+import { type EntityId, type RankDisplay } from '#lib/types.js';
 import {
 	buildLoaderKindTree,
 	buildSubcollectionEntry,
@@ -139,7 +139,7 @@ export function loadAggregateSubShelfPage(shelf: string, subShelf: string) {
 		bodyHtml: null,
 		// Cluster tiles first, then child-folder tiles.
 		subcollections: [...clusterSubcollections, ...childSubcollections],
-		timelines: [] as Array<{ path: string; href: string; title: string; summary: string | null; firstYear: number | null; lastYear: number | null; dateRange: string | null; firstCalendarDate: import('$lib/calendar').CalendarDate | null; lastCalendarDate: import('$lib/calendar').CalendarDate | null }>,
+		timelines: [] as Array<{ path: string; href: string; title: string; summary: string | null; firstYear: number | null; lastYear: number | null; dateRange: string | null; firstCalendarDate: import('#lib/calendar.js').CalendarDate | null; lastCalendarDate: import('#lib/calendar.js').CalendarDate | null }>,
 		subShelves: [] as Array<{
 			type: string;
 			plural: string;

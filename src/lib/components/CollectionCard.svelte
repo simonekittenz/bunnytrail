@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { toRoman, type RankDisplay } from '$lib/types.js';
-	import Tag from '$lib/components/Tag.svelte';
+	import { toRoman, type RankDisplay } from '#lib/types.js';
+	import Tag from '#lib/components/Tag.svelte';
 
 	interface Props {
 		href: string;

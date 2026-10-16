@@ -19,7 +19,7 @@ import { sources } from './server/sources';
 import { influences } from './server/influences';
 import { startWatcher } from './server/watcher';
 import { isGateEnabled, isValidSession, SESSION_COOKIE } from './server/auth';
-import type { Handle } from '@sveltejs/kit';
+import type { Handle } from '@sveltejs/kit/hooks';
 import { redirect } from '@sveltejs/kit';
 
 console.log(

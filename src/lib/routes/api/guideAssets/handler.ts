@@ -1,8 +1,8 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { error } from '@sveltejs/kit';
-import { GUIDES_DIR } from '$lib/server/globals';
-import { IMAGE_EXTENSIONS } from '$lib/server/markdown';
+import { GUIDES_DIR } from '#lib/server/globals.js';
+import { IMAGE_EXTENSIONS } from '#lib/server/markdown.js';
 
 /**
  * GET /api/guide-assets/[slug]/[filename]

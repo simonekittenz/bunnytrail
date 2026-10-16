@@ -1,18 +1,18 @@
 import { building } from '$app/env';
-import { graph } from '$lib/server/graph';
-import { world } from '$lib/server/world';
-import { assets } from '$lib/server/assets';
-import { guides } from '$lib/server/guides';
-import { blog } from '$lib/server/blog';
-import { readScope, readMode, type ScopeContext, type ViewMode } from '$lib/cluster';
-import { isGateEnabled } from '$lib/server/auth';
+import { graph } from '#lib/server/graph.js';
+import { world } from '#lib/server/world.js';
+import { assets } from '#lib/server/assets.js';
+import { guides } from '#lib/server/guides.js';
+import { blog } from '#lib/server/blog.js';
+import { readScope, readMode, type ScopeContext, type ViewMode } from '#lib/cluster.js';
+import { isGateEnabled } from '#lib/server/auth.js';
 
 /**
  * Cluster scope for the masthead nav.
  *
  * Top-level folders under `content/` are *clusters* of the universe.
  * The user's current scope is derived from the URL itself — see
- * `$lib/cluster.ts` for the rules. No cookie; the URL is the source
+ * `#lib/cluster.ts` for the rules. No cookie; the URL is the source
  * of truth.
  *
  * `selectedCluster === null` is the all-clusters view: shelf links

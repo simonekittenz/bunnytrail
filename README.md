@@ -69,8 +69,8 @@ src/
     styles/                     tokens.css + global.css
     types.ts                    Entity, Edge, Relation, …
     hooks.ts                    side-effect boot (consumer entry)
-  routes/                       generated shims into $lib/routes
-  hooks.server.ts               one-line `import '$lib/hooks';`
+  routes/                       generated shims into #lib/routes
+  hooks.server.ts               one-line `import '#lib/hooks.js';`
 
 bin/                            CLI: `bunnytrail init`, `bunnytrail sync`
 sample-world/                   bundled fixture; default world if env unset

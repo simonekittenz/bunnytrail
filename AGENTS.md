@@ -30,11 +30,11 @@ keep both healthy:
    exports (`bunnytrail/routes/*`); the consumer's `src/hooks.server.ts`
    is just `import 'bunnytrail/hooks';`.
 
-Engine code lives in `src/lib/`. Anything imported from `$lib/...`
+Engine code lives in `src/lib/`. Anything imported from `#lib/...`
 inside `src/lib/routes/` must also be reachable through the package
 `exports` map in `package.json` — otherwise it works in dogfood and
-breaks in consumers. Most of the time `$lib/server/...`,
-`$lib/components/...`, and `$lib/types` are what you need; all are
+breaks in consumers. Most of the time `#lib/server/...`,
+`#lib/components/...`, and `#lib/types.js` are what you need; all are
 mapped.
 
 ## Commands
@@ -45,7 +45,7 @@ npm run build         # Production build (engine dogfood)
 npm test              # Vitest
 npm run check         # svelte-check
 npm run smoke:sample  # Loader smoke test against sample-world/
-npm run package       # svelte-package → dist/  (what consumers install)
+npm run package       # svelte-package → dist/ (what consumers install) + alias leak check
 npm run format        # Prettier write
 npm run format:check  # Prettier check
 ```
@@ -81,8 +81,8 @@ src/
     types.ts                    Entity, Edge, Relation, FolderLabels
     cluster.ts                  scope-from-URL derivation
     hooks.ts                    side-effect boot module (consumer entry)
-  routes/                       ← shims into $lib/routes (generated, dogfood)
-  hooks.server.ts               ← one-line `import '$lib/hooks';`
+  routes/                       ← shims into #lib/routes (generated, dogfood)
+  hooks.server.ts               ← one-line `import '#lib/hooks.js';`
   app.html                      ← loads /api/assets/inline-svg.css
 
 bin/                            ← CLI (`bunnytrail init` + `bunnytrail sync`)
@@ -100,7 +100,9 @@ scripts/
 ## Conventions
 
 - **TypeScript everywhere.** No `any` without a comment explaining why.
-- **Path aliases**: `$lib/*` → `src/lib/*` (SvelteKit default).
+- **Path aliases**: `#lib/*` → `src/lib/*`, declared in `package.json` `imports`
+  (not a SvelteKit alias). Imports need the real extension — `#lib/types.js`
+  for a `.ts` file, `#lib/components/EntityCard.svelte` for Svelte.
 - **Formatting**: Prettier (`.prettierrc`). Run `npm run format` before
   committing.
 - **Tests**: Vitest. Co-locate `*.spec.ts` next to the source.

@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { HomeData } from './load';
 	import { page } from '$app/state';
-	import { t } from '$lib/i18n';
-	import Tag from '$lib/components/Tag.svelte';
-	import CollectionCard from '$lib/components/CollectionCard.svelte';
+	import { t } from '#lib/i18n.js';
+	import Tag from '#lib/components/Tag.svelte';
+	import CollectionCard from '#lib/components/CollectionCard.svelte';
 
 	let { data }: { data: HomeData } = $props();
 

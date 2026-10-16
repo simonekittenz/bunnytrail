@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Engine-mode shim regenerator. Drops re-export files under
-// src/routes/ that point at $lib/routes/. Wraps the shared generator
+// src/routes/ that point at #lib/routes/. Wraps the shared generator
 // in bin/shims.ts via tsx.
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';

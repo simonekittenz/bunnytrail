@@ -1,5 +1,5 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { isGateEnabled, verifySecret, sessionToken, SESSION_COOKIE, SESSION_MAX_AGE } from '$lib/server/auth';
+import { isGateEnabled, verifySecret, sessionToken, SESSION_COOKIE, SESSION_MAX_AGE } from '#lib/server/auth.js';
 
 /**
  * POST /api/auth/login

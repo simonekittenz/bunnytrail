@@ -1,1 +1,1 @@
-export { load } from '$lib/routes/health/load';
+export { load } from '#lib/routes/health/load.js';

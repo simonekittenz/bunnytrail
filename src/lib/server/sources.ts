@@ -2,7 +2,7 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import type { Dirent } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parse as parseYaml } from 'yaml';
-import type { HealthIssue } from '$lib/types';
+import type { HealthIssue } from '#lib/types.js';
 import { defaultSourcesDir, SOURCES_DIR } from './globals';
 import { splitFrontmatter } from './frontmatter';
 

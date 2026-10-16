@@ -14,13 +14,13 @@
 		"bunnytrail": "github:simonekittenz/bunnytrail#main"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-vercel": "^6.0.0",
-		"@sveltejs/kit": "^2.63.0",
+		"@sveltejs/adapter-vercel": "^7.0.1",
+		"@sveltejs/kit": "^3.1.0",
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@types/node": "^22.10.0",
-		"svelte": "^5.55.2",
-		"svelte-check": "^4.4.6",
+		"svelte": "^5.57.1",
+		"svelte-check": "^4.7.5",
 		"typescript": "^6.0.2",
-		"vite": "^8.0.7"
+		"vite": "^8.0.12"
 	}
 }

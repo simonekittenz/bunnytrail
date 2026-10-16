@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Entity } from '$lib/types';
+import type { Entity } from '#lib/types.js';
 import { byRankThenName, byRankThenNameDesc, rankComparator } from './graph';
 
 /** Minimal fake entity — the comparators only ever read `id`/`meta`. */

@@ -1,4 +1,4 @@
-import { blog } from '$lib/server/blog';
+import { blog } from '#lib/server/blog.js';
 
 /**
  * The blog tree lives outside the worldbuilding graph, so it gets

@@ -1,7 +1,7 @@
 import { error } from '@sveltejs/kit';
-import { influences } from '$lib/server/influences';
-import { graph } from '$lib/server/graph';
-import { renderBody } from '$lib/server/markdown';
+import { influences } from '#lib/server/influences.js';
+import { graph } from '#lib/server/graph.js';
+import { renderBody } from '#lib/server/markdown.js';
 
 function resolveImageSrc(slug: string, image: string): string | null {
 	if (/^https?:\/\//.test(image) || image.startsWith('//')) return image;

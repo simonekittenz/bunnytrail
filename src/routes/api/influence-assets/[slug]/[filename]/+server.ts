@@ -1,1 +1,1 @@
-export { GET, prerender, entries } from '$lib/routes/api/influenceAssets/handler';
+export { GET, prerender, entries } from '#lib/routes/api/influenceAssets/handler.js';

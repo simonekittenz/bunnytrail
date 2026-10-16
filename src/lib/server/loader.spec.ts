@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { buildKindTree } from '$lib/types';
+import { buildKindTree } from '#lib/types.js';
 import {
 	buildEdges,
 	extractKindLinks,

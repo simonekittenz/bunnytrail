@@ -1,6 +1,6 @@
-import { graph } from '$lib/server/graph';
-import { renderSummary } from '$lib/server/markdown';
-import { type EntityId, type RankDisplay } from '$lib/types';
+import { graph } from '#lib/server/graph.js';
+import { renderSummary } from '#lib/server/markdown.js';
+import { type EntityId, type RankDisplay } from '#lib/types.js';
 import {
 	buildLoaderKindTree,
 	buildSubcollectionEntry,
@@ -127,7 +127,7 @@ export function loadAggregateShelfPage(shelf: string) {
 		description,
 		bodyHtml: null,
 		subcollections,
-		timelines: [] as Array<{ path: string; href: string; title: string; summary: string | null; firstYear: number | null; lastYear: number | null; dateRange: string | null; firstCalendarDate: import('$lib/calendar').CalendarDate | null; lastCalendarDate: import('$lib/calendar').CalendarDate | null }>,
+		timelines: [] as Array<{ path: string; href: string; title: string; summary: string | null; firstYear: number | null; lastYear: number | null; dateRange: string | null; firstCalendarDate: import('#lib/calendar.js').CalendarDate | null; lastCalendarDate: import('#lib/calendar.js').CalendarDate | null }>,
 		subShelves,
 		subcollectionTrees,
 		containers: [] as ContainerNode[],

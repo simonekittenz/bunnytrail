@@ -12,8 +12,8 @@ import type {
 	RelationRegistry,
 	Timeline,
 	VocabEntry
-} from '$lib/types';
-import { folderLabels, titleCaseSlug } from '$lib/types';
+} from '#lib/types.js';
+import { folderLabels, titleCaseSlug } from '#lib/types.js';
 import { CONTENT_DIR } from './globals';
 import { buildEdges, loadAll, resolveWikilink } from './loader';
 import { loadWorld } from './world';

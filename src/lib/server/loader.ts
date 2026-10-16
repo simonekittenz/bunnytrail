@@ -1,6 +1,6 @@
 import { readdir } from 'node:fs/promises';
 import type { Dirent } from 'node:fs';
-import type { Edge, Entity, EntityId, EntityType, EraConfig, HealthIssue, Kind, Ontology, Collection, PropertyRegistry, RelationRegistry, Timeline } from '$lib/types';
+import type { Edge, Entity, EntityId, EntityType, EraConfig, HealthIssue, Kind, Ontology, Collection, PropertyRegistry, RelationRegistry, Timeline } from '#lib/types.js';
 import type { CustomCalendarsConfig } from './world';
 import { loadKindRegistry } from './kinds';
 import { CONTENT_DIR } from './globals';

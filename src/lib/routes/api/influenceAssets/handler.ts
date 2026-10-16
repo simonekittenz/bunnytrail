@@ -1,8 +1,8 @@
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { error } from '@sveltejs/kit';
-import { INFLUENCES_DIR } from '$lib/server/globals';
-import { IMAGE_EXTENSIONS } from '$lib/server/markdown';
+import { INFLUENCES_DIR } from '#lib/server/globals.js';
+import { IMAGE_EXTENSIONS } from '#lib/server/markdown.js';
 
 /**
  * GET /api/influence-assets/[slug]/[filename]

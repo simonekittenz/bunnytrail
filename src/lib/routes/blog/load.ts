@@ -1,4 +1,4 @@
-import { blog, excerpt, formatPostDate } from '$lib/server/blog';
+import { blog, excerpt, formatPostDate } from '#lib/server/blog.js';
 
 /**
  * Index of all journal posts, newest first. Only the fields the

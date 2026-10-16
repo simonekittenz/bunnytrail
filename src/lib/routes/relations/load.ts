@@ -1,6 +1,6 @@
-import { graph } from '$lib/server/graph';
-import { relationLabel } from '$lib/types';
-import type { PropertySchema } from '$lib/types';
+import { graph } from '#lib/server/graph.js';
+import { relationLabel } from '#lib/types.js';
+import type { PropertySchema } from '#lib/types.js';
 
 export interface RelationIndexEntry {
 	kind: string;

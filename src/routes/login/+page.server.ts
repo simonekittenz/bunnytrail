@@ -1,1 +1,1 @@
-export { load, prerender } from '$lib/routes/login/load';
+export { load, prerender } from '#lib/routes/login/load.js';

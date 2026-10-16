@@ -1,5 +1,5 @@
-import { graph } from '$lib/server/graph';
-import { sources } from '$lib/server/sources';
+import { graph } from '#lib/server/graph.js';
+import { sources } from '#lib/server/sources.js';
 
 /**
  * Index of all source projects — the feeder works being absorbed

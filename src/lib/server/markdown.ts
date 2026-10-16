@@ -1,5 +1,5 @@
 import { marked } from 'marked';
-import type { Entity, EntityId } from '$lib/types';
+import type { Entity, EntityId } from '#lib/types.js';
 
 /**
  * A function that resolves a wikilink path (as written in prose) to

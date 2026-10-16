@@ -1,5 +1,5 @@
-import { graph } from '$lib/server/graph';
-import { relationLabel, type RelationLabels } from '$lib/types';
+import { graph } from '#lib/server/graph.js';
+import { relationLabel, type RelationLabels } from '#lib/types.js';
 
 export interface GraphNode {
 	id: string;

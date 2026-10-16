@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit';
-import { guides } from '$lib/server/guides';
-import { graph } from '$lib/server/graph';
-import { influences } from '$lib/server/influences';
-import { inlineSvgFigures } from '$lib/server/inlineSvgs';
-import { makeCollectionResolver, renderBody, renderSummary } from '$lib/server/markdown';
+import { guides } from '#lib/server/guides.js';
+import { graph } from '#lib/server/graph.js';
+import { influences } from '#lib/server/influences.js';
+import { inlineSvgFigures } from '#lib/server/inlineSvgs.js';
+import { makeCollectionResolver, renderBody, renderSummary } from '#lib/server/markdown.js';
 
 /**
  * A single guide — a tour of the world, or a "start here" landing

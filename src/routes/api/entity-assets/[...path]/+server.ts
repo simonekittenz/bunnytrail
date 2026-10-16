@@ -1,1 +1,1 @@
-export { GET, prerender, entries } from '$lib/routes/api/entityAssets/handler';
+export { GET, prerender, entries } from '#lib/routes/api/entityAssets/handler.js';

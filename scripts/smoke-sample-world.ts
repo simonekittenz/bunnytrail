@@ -2,8 +2,8 @@
 // against ./sample-world and prints a summary of what the graph sees.
 // Used during engine development to verify changes to the loader
 // don't break the bundled fixture.
-import { graph } from '$lib/server/graph';
-import { guides } from '$lib/server/guides';
+import { graph } from '#lib/server/graph.js';
+import { guides } from '#lib/server/guides.js';
 
 await graph.ready();
 await guides.ready();

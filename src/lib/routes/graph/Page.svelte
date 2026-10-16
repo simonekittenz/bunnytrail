@@ -2,7 +2,7 @@
 	import { onMount, untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { t } from '$lib/i18n';
+	import { t } from '#lib/i18n.js';
 	import {
 		forceSimulation,
 		forceManyBody,
@@ -15,7 +15,7 @@
 	} from 'd3-force';
 	import { zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from 'd3-zoom';
 	import { select } from 'd3-selection';
-	import { buildKindTree, relationLabel } from '$lib/types';
+	import { buildKindTree, relationLabel } from '#lib/types.js';
 	import type { GraphData, GraphNode, GraphEdge } from './load';
 
 	let { data }: { data: GraphData } = $props();

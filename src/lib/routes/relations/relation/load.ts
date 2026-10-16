@@ -1,5 +1,5 @@
-import { graph } from '$lib/server/graph';
-import { relationLabel } from '$lib/types';
+import { graph } from '#lib/server/graph.js';
+import { relationLabel } from '#lib/types.js';
 import { error } from '@sveltejs/kit';
 
 export interface RelationEdge {

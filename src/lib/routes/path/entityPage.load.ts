@@ -1,11 +1,11 @@
-import { graph, byRankThenName } from '$lib/server/graph';
-import type { SpeciesPresenceEntry } from '$lib/server/graph';
-import { world } from '$lib/server/world';
-import { inlineSvgFigures } from '$lib/server/inlineSvgs';
-import { makeCollectionResolver, renderEntityBody, renderSummary } from '$lib/server/markdown';
-import { formatCalendarRange } from '$lib/calendar';
-import { titleCaseSlug, toRoman, relationLabel, type Entity, type RankDisplay, type VocabEntry } from '$lib/types';
-import type { ViewMode } from '$lib/cluster';
+import { graph, byRankThenName } from '#lib/server/graph.js';
+import type { SpeciesPresenceEntry } from '#lib/server/graph.js';
+import { world } from '#lib/server/world.js';
+import { inlineSvgFigures } from '#lib/server/inlineSvgs.js';
+import { makeCollectionResolver, renderEntityBody, renderSummary } from '#lib/server/markdown.js';
+import { formatCalendarRange } from '#lib/calendar.js';
+import { titleCaseSlug, toRoman, relationLabel, type Entity, type RankDisplay, type VocabEntry } from '#lib/types.js';
+import type { ViewMode } from '#lib/cluster.js';
 
 /**
  * Build the view-model for an entity page. Returned shape is consumed

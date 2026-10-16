@@ -1,8 +1,8 @@
 import { readFile, stat } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { assets } from '$lib/server/assets';
-import { ASSETS_DIR } from '$lib/server/globals';
-import { IMAGE_EXTENSIONS } from '$lib/server/markdown';
+import { assets } from '#lib/server/assets.js';
+import { ASSETS_DIR } from '#lib/server/globals.js';
+import { IMAGE_EXTENSIONS } from '#lib/server/markdown.js';
 import { error } from '@sveltejs/kit';
 
 /**

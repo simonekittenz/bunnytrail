@@ -21,7 +21,7 @@ Engine-vs-world boundary:
 
 - Worldbuilding content, kinds taxonomy, authoring rules — all live
   in the consumer repo (alteria_world). Don't move them here.
-- Anything imported from `$lib/...` inside `src/lib/routes/` must
+- Anything imported from `#lib/...` inside `src/lib/routes/` must
   also be reachable through the `exports` map in `package.json` —
   otherwise it breaks for consumers.
 - Engine route changes need both `node scripts/generate-shims.mjs`

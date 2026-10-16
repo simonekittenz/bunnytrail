@@ -1,7 +1,7 @@
-import { graph } from '$lib/server/graph';
-import { inlineSvgFigures } from '$lib/server/inlineSvgs';
-import { makeCollectionResolver, renderBody, renderSummary } from '$lib/server/markdown';
-import type { Chapter, Entity } from '$lib/types';
+import { graph } from '#lib/server/graph.js';
+import { inlineSvgFigures } from '#lib/server/inlineSvgs.js';
+import { makeCollectionResolver, renderBody, renderSummary } from '#lib/server/markdown.js';
+import type { Chapter, Entity } from '#lib/types.js';
 
 /**
  * Build the view-model for a single chapter page (book-mode

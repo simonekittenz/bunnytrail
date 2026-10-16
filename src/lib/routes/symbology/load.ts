@@ -1,5 +1,5 @@
-import { graph } from '$lib/server/graph';
-import type { ClusterScope } from '$lib/cluster';
+import { graph } from '#lib/server/graph.js';
+import type { ClusterScope } from '#lib/cluster.js';
 
 export interface SymbolEntry {
 	id: string;

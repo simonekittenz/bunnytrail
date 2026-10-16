@@ -2,18 +2,18 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import type { EntityPageData } from './entityPage.load';
-	import { t } from '$lib/i18n';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import PropertyList from '$lib/components/PropertyList.svelte';
-	import EntityLink from '$lib/components/EntityLink.svelte';
-	import EntityCard from '$lib/components/EntityCard.svelte';
-	import Tag from '$lib/components/Tag.svelte';
-	import StatisticsPanel from '$lib/components/StatisticsPanel.svelte';
-	import VocabularyTable from '$lib/components/VocabularyTable.svelte';
+	import { t } from '#lib/i18n.js';
+	import PageHeader from '#lib/components/PageHeader.svelte';
+	import PropertyList from '#lib/components/PropertyList.svelte';
+	import EntityLink from '#lib/components/EntityLink.svelte';
+	import EntityCard from '#lib/components/EntityCard.svelte';
+	import Tag from '#lib/components/Tag.svelte';
+	import StatisticsPanel from '#lib/components/StatisticsPanel.svelte';
+	import VocabularyTable from '#lib/components/VocabularyTable.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { relationLabel } from '$lib/types';
-	import { toRoman } from '$lib/types';
-	import { formatDate } from '$lib/dates';
+	import { relationLabel } from '#lib/types.js';
+	import { toRoman } from '#lib/types.js';
+	import { formatDate } from '#lib/dates.js';
 
 	let { data }: { data: EntityPageData } = $props();
 
@@ -80,13 +80,13 @@
 	});
 
 	function gotoTab(tab: TabId) {
-		const url = new URL(page.url);
+		const url = new URL(page.url.href);
 		if (tab === 'about') {
 			url.searchParams.delete('tab');
 		} else {
 			url.searchParams.set('tab', tab);
 		}
-		goto(url.toString(), { replaceState: true, noScroll: true });
+		goto(url.toString(), { replace: true, reset: false });
 	}
 
 	const COLLAPSE_AT = 8;

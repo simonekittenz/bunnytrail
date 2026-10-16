@@ -1,1 +1,1 @@
-export { load } from '$lib/routes/kinds/kind/load';
+export { load } from '#lib/routes/kinds/kind/load.js';

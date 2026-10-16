@@ -1,5 +1,5 @@
-import { influences } from '$lib/server/influences';
-import { graph } from '$lib/server/graph';
+import { influences } from '#lib/server/influences.js';
+import { graph } from '#lib/server/graph.js';
 
 /**
  * Resolve an influence image filename or URL to a usable src.

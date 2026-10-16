@@ -1,4 +1,4 @@
-import { guides } from '$lib/server/guides';
+import { guides } from '#lib/server/guides.js';
 
 /**
  * Index of all guides. Each entry carries enough to render a

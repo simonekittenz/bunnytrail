@@ -1,12 +1,12 @@
-import { graph } from '$lib/server/graph';
-import { guides } from '$lib/server/guides';
-import { sources } from '$lib/server/sources';
-import { influences } from '$lib/server/influences';
-import { world } from '$lib/server/world';
-import { assets } from '$lib/server/assets';
-import { blog } from '$lib/server/blog';
-import { readDirents } from '$lib/server/walker';
-import { CONTENT_DIR } from '$lib/server/globals';
+import { graph } from '#lib/server/graph.js';
+import { guides } from '#lib/server/guides.js';
+import { sources } from '#lib/server/sources.js';
+import { influences } from '#lib/server/influences.js';
+import { world } from '#lib/server/world.js';
+import { assets } from '#lib/server/assets.js';
+import { blog } from '#lib/server/blog.js';
+import { readDirents } from '#lib/server/walker.js';
+import { CONTENT_DIR } from '#lib/server/globals.js';
 import { join } from 'path';
 
 const IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);

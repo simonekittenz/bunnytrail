@@ -1,8 +1,8 @@
-import { graph } from '$lib/server/graph';
-import { world } from '$lib/server/world';
-import { renderBody, renderSummary } from '$lib/server/markdown';
-import { inlineSvgFigures } from '$lib/server/inlineSvgs';
-import { formatCalendarDateById, formatCalendarRange } from '$lib/calendar';
+import { graph } from '#lib/server/graph.js';
+import { world } from '#lib/server/world.js';
+import { renderBody, renderSummary } from '#lib/server/markdown.js';
+import { inlineSvgFigures } from '#lib/server/inlineSvgs.js';
+import { formatCalendarDateById, formatCalendarRange } from '#lib/calendar.js';
 
 export interface TimelineEntryCard {
 	/** Folder path, e.g. `leemburg/verhalen/jan-arend-jr/1954`. */

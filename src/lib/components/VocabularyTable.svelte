@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { VocabEntry } from '$lib/types';
+	import type { VocabEntry } from '#lib/types.js';
 
 	interface Props {
 		entries: VocabEntry[];

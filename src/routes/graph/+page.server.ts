@@ -1,1 +1,1 @@
-export { load } from '$lib/routes/graph/load';
+export { load } from '#lib/routes/graph/load.js';

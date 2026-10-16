@@ -1,1 +1,1 @@
-export { GET } from '$lib/routes/api/search/handler';
+export { GET } from '#lib/routes/api/search/handler.js';

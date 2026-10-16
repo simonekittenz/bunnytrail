@@ -10,7 +10,7 @@
 // the engine's implementation.
 //
 // Two modes:
-//   • `engine`     — shims import from `$lib/routes/...`. Used by
+//   • `engine`     — shims import from `#lib/routes/...`. Used by
 //                    the engine repo itself for dogfooding.
 //   • `consumer`   — shims import from `bunnytrail/routes/...` (the
 //                    package exports map). Used by world repos that
@@ -39,7 +39,12 @@ interface Shim {
 
 /** Where shim files re-export load/handler/component from. */
 function importBase(mode: ShimMode): string {
-	return mode === 'engine' ? '$lib/routes' : 'bunnytrail/routes';
+	return mode === 'engine' ? '#lib/routes' : 'bunnytrail/routes';
+}
+
+/** Engine subpath imports need an explicit extension; the package exports map doesn't. */
+function ext(mode: ShimMode): string {
+	return mode === 'engine' ? '.js' : '';
 }
 
 /** Whether to bake a prerender export into the root layout. */
@@ -60,7 +65,7 @@ interface RouteShimOpts {
 
 const pageServer = (mode: ShimMode, lib: string, opts: RouteShimOpts = {}, extra = '') => {
 	const names = ['load', ...(opts.extraExports ?? [])];
-	return `export { ${names.join(', ')} } from '${importBase(mode)}/${lib}/load';\n${extra}`;
+	return `export { ${names.join(', ')} } from '${importBase(mode)}/${lib}/load${ext(mode)}';\n${extra}`;
 };
 
 const pageSvelte = (mode: ShimMode, lib: string) => `<script lang="ts">
@@ -74,7 +79,7 @@ const pageSvelte = (mode: ShimMode, lib: string) => `<script lang="ts">
 `;
 
 const layoutServer = (mode: ShimMode, lib: string, name: string, extra: string) =>
-	`export { load } from '${importBase(mode)}/${lib}/${name}';\n${extra}`;
+	`export { load } from '${importBase(mode)}/${lib}/${name}${ext(mode)}';\n${extra}`;
 
 const layoutSvelte = (mode: ShimMode, lib: string) => `<script lang="ts">
 \timport type { Snippet } from 'svelte';
@@ -89,7 +94,7 @@ const layoutSvelte = (mode: ShimMode, lib: string) => `<script lang="ts">
 
 const server = (mode: ShimMode, lib: string, opts: RouteShimOpts = {}, verb = 'GET') => {
 	const names = [verb, ...(opts.extraExports ?? [])];
-	return `export { ${names.join(', ')} } from '${importBase(mode)}/${lib}/handler';\n`;
+	return `export { ${names.join(', ')} } from '${importBase(mode)}/${lib}/handler${ext(mode)}';\n`;
 };
 
 export function planShims(mode: ShimMode): Shim[] {
@@ -137,11 +142,11 @@ export function planShims(mode: ShimMode): Shim[] {
 		},
 		{
 			file: 'api/auth/logout/+server.ts',
-			contents: `export { POST } from '${importBase(mode)}/auth/logout';\n`
+			contents: `export { POST } from '${importBase(mode)}/auth/logout${ext(mode)}';\n`
 		},
 		{
 			file: 'api/auth/check/+server.ts',
-			contents: `export { GET } from '${importBase(mode)}/api/authCheck/handler';\n`
+			contents: `export { GET } from '${importBase(mode)}/api/authCheck/handler${ext(mode)}';\n`
 		},
 		// Blog
 		{

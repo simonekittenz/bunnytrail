@@ -1,7 +1,7 @@
-import { graph } from '$lib/server/graph';
-import { guides, validateGuideLinks } from '$lib/server/guides';
-import { influences } from '$lib/server/influences';
-import type { HealthIssue } from '$lib/types';
+import { graph } from '#lib/server/graph.js';
+import { guides, validateGuideLinks } from '#lib/server/guides.js';
+import { influences } from '#lib/server/influences.js';
+import type { HealthIssue } from '#lib/types.js';
 
 /**
  * The full list of health issues raised by the loader, grouped by

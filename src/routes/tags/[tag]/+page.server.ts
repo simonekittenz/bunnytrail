@@ -1,1 +1,1 @@
-export { load } from '$lib/routes/tags/tag/load';
+export { load } from '#lib/routes/tags/tag/load.js';

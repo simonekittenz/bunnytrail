@@ -191,7 +191,7 @@ export type ViewMode = 'visitor' | 'dev';
  * Read the current view mode from a URL's query string.
  * Defaults to `'visitor'` when the param is absent or invalid.
  */
-export function readMode(searchParams: URLSearchParams): ViewMode {
+export function readMode(searchParams: Pick<URLSearchParams, 'get'>): ViewMode {
 	const raw = searchParams.get('mode');
 	if (raw === 'dev') return 'dev';
 	return 'visitor';

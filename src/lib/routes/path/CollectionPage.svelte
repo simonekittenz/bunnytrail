@@ -1,13 +1,13 @@
 <script lang="ts">
 	import './CollectionPage.css';
 	import { page } from '$app/state';
-	import { t } from '$lib/i18n';
+	import { t } from '#lib/i18n.js';
 	import type { CollectionPageData, ContainerNode, OrbitNode } from './collectionPage.load';
-	import CollectionCard from '$lib/components/CollectionCard.svelte';
-	import EntityCard from '$lib/components/EntityCard.svelte';
-	import PageHeader from '$lib/components/PageHeader.svelte';
-	import { buildKindTree, toRoman } from '$lib/types';
-	import { translateUrl } from '$lib/cluster';
+	import CollectionCard from '#lib/components/CollectionCard.svelte';
+	import EntityCard from '#lib/components/EntityCard.svelte';
+	import PageHeader from '#lib/components/PageHeader.svelte';
+	import { buildKindTree, toRoman } from '#lib/types.js';
+	import { translateUrl } from '#lib/cluster.js';
 
 	let { data }: { data: CollectionPageData } = $props();
 

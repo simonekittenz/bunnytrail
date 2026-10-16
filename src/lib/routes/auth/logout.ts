@@ -1,5 +1,5 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { SESSION_COOKIE } from '$lib/server/auth';
+import { SESSION_COOKIE } from '#lib/server/auth.js';
 
 /**
  * POST /api/auth/logout

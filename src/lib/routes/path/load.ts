@@ -1,6 +1,6 @@
 import { error, redirect } from '@sveltejs/kit';
-import { graph } from '$lib/server/graph';
-import { readMode } from '$lib/cluster';
+import { graph } from '#lib/server/graph.js';
+import { readMode } from '#lib/cluster.js';
 import { loadEntityPage } from './entityPage.load';
 import { loadCollectionPage } from './collectionPage.load';
 import { loadAggregateShelfPage } from './aggregateShelfPage.load';

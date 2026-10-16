@@ -1,4 +1,4 @@
-import { graph } from '$lib/server/graph';
+import { graph } from '#lib/server/graph.js';
 import { loadKindPage } from './kindPage.load';
 
 export type { KindCard, KindSliceNode, KindRefSection, KindPageData } from './kindPage.load';

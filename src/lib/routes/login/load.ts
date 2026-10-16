@@ -1,7 +1,7 @@
 import { redirect } from '@sveltejs/kit';
-import { world } from '$lib/server/world';
-import { assets } from '$lib/server/assets';
-import { isGateEnabled, isValidSession, safeRedirectTarget, SESSION_COOKIE } from '$lib/server/auth';
+import { world } from '#lib/server/world.js';
+import { assets } from '#lib/server/assets.js';
+import { isGateEnabled, isValidSession, safeRedirectTarget, SESSION_COOKIE } from '#lib/server/auth.js';
 import type { RequestEvent } from '@sveltejs/kit';
 
 // /login must never be prerendered — it reads cookies to check the

@@ -1,4 +1,4 @@
-import type { EntityId } from '$lib/types';
+import type { EntityId } from '#lib/types.js';
 
 /**
  * Match `[[type/slug]]` or `[[type/<sub>/.../slug]]` (optionally
