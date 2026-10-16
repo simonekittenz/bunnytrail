@@ -9,7 +9,6 @@
 //     .env.example
 //     README.md
 //     package.json
-//     svelte.config.js
 //     tsconfig.json
 //     vite.config.ts
 //     vercel.json
@@ -47,7 +46,6 @@ interface FileCopy {
 const STATIC: FileCopy[] = [
 	{ from: 'gitignore', to: '.gitignore' },
 	{ from: 'env.example', to: '.env.example' },
-	{ from: 'svelte.config.js.tpl', to: 'svelte.config.js' },
 	{ from: 'tsconfig.json.tpl', to: 'tsconfig.json' },
 	{ from: 'vite.config.ts.tpl', to: 'vite.config.ts' },
 	{ from: 'vercel.json', to: 'vercel.json' },

@@ -14,8 +14,8 @@
 		"bunnytrail": "github:simonekittenz/bunnytrail#main"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-vercel": "^5.0.0",
-		"@sveltejs/kit": "^2.57.0",
+		"@sveltejs/adapter-vercel": "^6.0.0",
+		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@types/node": "^22.10.0",
 		"svelte": "^5.55.2",

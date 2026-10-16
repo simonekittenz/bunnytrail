@@ -210,7 +210,7 @@ export class Graph {
 	 * Monotonically incrementing load counter. Starts at 0 (never
 	 * loaded) and increments after every successful `load()`. Dev-mode
 	 * tooling can poll this to detect when the graph has been reloaded
-	 * and trigger a client-side `invalidateAll()`.
+	 * and trigger a client-side `refreshAll()`.
 	 */
 	get version(): number {
 		return this.#version;

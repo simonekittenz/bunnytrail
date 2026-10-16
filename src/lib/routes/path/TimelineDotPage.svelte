@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { t } from '$lib/i18n';
 	import type { TimelineDotPageData } from './timelineDotPage.load.ts';
 
@@ -9,7 +9,7 @@
 
 	let { data }: Props = $props();
 
-	const ui = $derived(t($page.data.world?.language));
+	const ui = $derived(t(page.data.world?.language));
 
 	/** Append `?thread=<path>` to a dot href when a thread context is active. */
 	function withThread(href: string): string {

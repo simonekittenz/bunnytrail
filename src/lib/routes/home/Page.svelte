@@ -1,15 +1,15 @@
 <script lang="ts">
 	import type { HomeData } from './load';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { t } from '$lib/i18n';
 	import Tag from '$lib/components/Tag.svelte';
 	import CollectionCard from '$lib/components/CollectionCard.svelte';
 
 	let { data }: { data: HomeData } = $props();
 
-	const world = $derived($page.data.world);
-	const ornament = $derived($page.data.ornament);
-	const ui = $derived(t($page.data.world.language));
+	const world = $derived(page.data.world);
+	const ornament = $derived(page.data.ornament);
+	const ui = $derived(t(page.data.world.language));
 
 	const wordCount = $derived(data.totalWords.toLocaleString());
 </script>

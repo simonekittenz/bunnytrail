@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { t } from '$lib/i18n';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import type { KindNode, OntologySection } from './load';
@@ -14,7 +14,7 @@
 		data.sections.length > 1 || (data.sections.length === 1 && data.sections[0].ontologyId !== null)
 	);
 
-	const ui = $derived(t($page.data.world.language));
+	const ui = $derived(t(page.data.world.language));
 </script>
 
 <PageHeader title={ui.kinds_title} />

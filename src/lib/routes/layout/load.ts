@@ -1,4 +1,4 @@
-import { building } from '$app/environment';
+import { building } from '$app/env';
 import { graph } from '$lib/server/graph';
 import { world } from '$lib/server/world';
 import { assets } from '$lib/server/assets';

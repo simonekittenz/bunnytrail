@@ -1,9 +1,9 @@
 <script lang="ts">
 	import '$lib/styles/global.css';
 
-	import { page } from '$app/stores';
-	import { beforeNavigate, afterNavigate, goto, invalidateAll } from '$app/navigation';
-	import { browser, dev } from '$app/environment';
+	import { page } from '$app/state';
+	import { beforeNavigate, afterNavigate, goto, refreshAll } from '$app/navigation';
+	import { browser, dev } from '$app/env';
 	import { onMount, setContext } from 'svelte';
 	import { injectAnalytics } from '@vercel/analytics/sveltekit';
 	import { t } from '$lib/i18n';
@@ -43,10 +43,10 @@
 
 	let { data, children }: Props = $props();
 
-	const ui = $derived(t($page.data.world?.language));
+	const ui = $derived(t(page.data.world?.language));
 
 	// On the /login page hide the nav chrome so it reads as a clean entry point.
-	const gated = $derived($page.url.pathname === '/login');
+	const gated = $derived(page.url.pathname === '/login');
 
 	// Vercel Web Analytics. Safe to call unconditionally — on
 	// non-Vercel deployments the beacon endpoint is absent, so the
@@ -78,7 +78,7 @@
 					knownVersion = v; // baseline — don't invalidate on first message
 				} else if (v !== knownVersion) {
 					knownVersion = v;
-					void invalidateAll();
+					void refreshAll();
 				}
 			};
 			return () => es.close();
@@ -155,18 +155,18 @@
 	// content. The empty home page (`/`) yields empty values for
 	// both, which CSS attribute selectors won't match.
 	let pathAttrs = $derived.by(() => {
-		const raw = $page.url.pathname.replace(/^\/+/, '').replace(/\/+$/, '');
+		const raw = page.url.pathname.replace(/^\/+/, '').replace(/\/+$/, '');
 		const section = raw.split('/')[0] ?? '';
 		return { path: raw, section };
 	});
 
 	// activeMode is read from the live URL rather than from layout data.
 	// Layout data is baked in at prerender time (always 'visitor'), so
-	// reading from $page.url.searchParams here is the only way ?mode=dev
+	// reading from page.url.searchParams here is the only way ?mode=dev
 	// works on a fully-prerendered site like production.
 	const activeMode = $derived.by((): ViewMode => {
 		try {
-			return readMode($page.url.searchParams);
+			return readMode(page.url.searchParams);
 		} catch {
 			return 'visitor';
 		}
@@ -176,7 +176,7 @@
 	// data is prerendered as null and won't reflect ?era= on the client.
 	const activeEra = $derived.by((): string | null => {
 		try {
-			return $page.url.searchParams.get('era') ?? null;
+			return page.url.searchParams.get('era') ?? null;
 		} catch {
 			return null;
 		}
@@ -199,7 +199,7 @@
 	// (descendant) — valid ARIA 1.1 tokens. Themes select with
 	// `[aria-current]` to dress active items.
 	function navAriaCurrent(href: string): 'page' | true | undefined {
-		const current = '/' + ($page.url.pathname.replace(/^\/+/, '').replace(/\/+$/, '') || '');
+		const current = '/' + (page.url.pathname.replace(/^\/+/, '').replace(/\/+$/, '') || '');
 		const target = '/' + (href.replace(/^\/+/, '').replace(/\/+$/, '') || '');
 		if (current === target) return 'page';
 		if (target !== '/' && (current === target || current.startsWith(target + '/')))
@@ -268,9 +268,9 @@
 		const newScope = value === '' ? null : value;
 		const target = translateUrl(
 			{
-				pathname: $page.url.pathname,
-				search: $page.url.search,
-				hash: $page.url.hash
+				pathname: page.url.pathname,
+				search: page.url.search,
+				hash: page.url.hash
 			},
 			newScope,
 			data.scopeContext
@@ -282,7 +282,7 @@
 	}
 
 	function switchEra(ref: string | null) {
-		const u = new URL($page.url);
+		const u = new URL(page.url);
 		if (ref) u.searchParams.set('era', ref);
 		else u.searchParams.delete('era');
 		bypassEraCarry = true;
@@ -292,7 +292,7 @@
 	}
 
 	function switchMode(mode: ViewMode) {
-		const u = new URL($page.url);
+		const u = new URL(page.url);
 		if (mode === 'visitor') {
 			u.searchParams.delete('mode');
 		} else {
@@ -367,7 +367,7 @@
 	});
 
 	let metaActive = $derived.by(() => {
-		const current = '/' + ($page.url.pathname.replace(/^\/+/, '').replace(/\/+$/, '') || '');
+		const current = '/' + (page.url.pathname.replace(/^\/+/, '').replace(/\/+$/, '') || '');
 		return (
 			current === '/kinds' ||
 			current.startsWith('/kinds/') ||
@@ -390,10 +390,10 @@
 	);
 
 	// Dev bar: shown below the masthead in dev mode on entity and collection pages.
-	// Reads from $page.data which merges layout + route data.
+	// Reads from page.data which merges layout + route data.
 	const devBar = $derived.by(() => {
 		if (activeMode !== 'dev') return null;
-		const pd = $page.data as Record<string, unknown>;
+		const pd = page.data as Record<string, unknown>;
 		if (pd.kind === 'entity') {
 			const devInfo = pd.devInfo as {
 				issues: { kind: string; detail: string }[];

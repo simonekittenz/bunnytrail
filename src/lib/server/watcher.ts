@@ -1,4 +1,4 @@
-import { dev } from '$app/environment';
+import { dev } from '$app/env';
 import chokidar from 'chokidar';
 import { blog } from './blog';
 import { guides } from './guides';

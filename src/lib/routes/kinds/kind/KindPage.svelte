@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { t } from '$lib/i18n';
 	import EntityCard from '$lib/components/EntityCard.svelte';
 	import EntityLink from '$lib/components/EntityLink.svelte';
@@ -42,7 +42,7 @@
 		return activeTab;
 	});
 
-	const ui = $derived(t($page.data.world.language));
+	const ui = $derived(t(page.data.world.language));
 </script>
 
 {#snippet branch(node: KindSliceNode)}

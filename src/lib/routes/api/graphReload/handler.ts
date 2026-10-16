@@ -1,4 +1,4 @@
-import { dev } from '$app/environment';
+import { dev } from '$app/env';
 import { graph } from '$lib/server/graph';
 
 /**
@@ -8,7 +8,7 @@ import { graph } from '$lib/server/graph';
  * number whenever the file watcher triggers a graph reload.
  *
  * The client subscribes once (via `EventSource`) and calls
- * `invalidateAll()` whenever a new version arrives. This is the
+ * `refreshAll()` whenever a new version arrives. This is the
  * signal that causes SvelteKit to re-run all active `load()`
  * functions and refresh the page data without a full browser reload.
  *
