@@ -13,7 +13,7 @@
  *
  * Expected output:
  *   [vm2-test] GET /        → 200  ✓
- *   [vm2-test] GET /earth   → 200  ✓
+ *   [vm2-test] GET /kinds   → 200  ✓
  *   [vm2-test] ALL PASSED
  *
  * iPad fidelity:
@@ -94,6 +94,23 @@ try {
 			root: cwd
 		}
 	});
+	// Recent vm2 releases refuse `os`, `child_process` and `module` even with
+	// builtin: ['*'] (sandbox-escape hardening), but the engine's dependencies
+	// require them at load time and Node.js Lab ships an older, more permissive
+	// vm2. Fail up front with a useful message instead of an async
+	// "Cannot find module 'os'" crash from inside the bundle.
+	for (const mod of ['os', 'child_process']) {
+		try {
+			vm.run(`module.exports = typeof require(${JSON.stringify(mod)})`, path.join(cwd, 'vm2-preflight.js'));
+		} catch {
+			console.error(
+				`[vm2-test] this vm2 blocks require("${mod}") inside the sandbox, which Node.js Lab allows.\n` +
+					'[vm2-test] run the test against an older vm2 that matches the iPad, e.g.:\n' +
+					'[vm2-test]   npm install vm2@3.9.19 --no-save   (dev-only; has known advisories)'
+			);
+			process.exit(1);
+		}
+	}
 } finally {
 	if (origSandbox.includes(PROXY_STRIPPED)) {
 		fs.writeFileSync(VM2_SETUP_SANDBOX, origSandbox);
@@ -113,7 +130,10 @@ try {
 setTimeout(async () => {
 	const tests = [
 		{ path: '/', expectStatus: 200, expectBody: '<!doctype' },
-		{ path: '/kinds', expectStatus: 200, expectBody: '<!doctype' }
+		{ path: '/kinds', expectStatus: 200, expectBody: '<!doctype' },
+		{ path: '/graph', expectStatus: 200, expectBody: '<!doctype' },
+		{ path: '/api/assets/inline-svg.css', expectStatus: 200, expectBody: '' },
+		{ path: '/definitely/not/a/page', expectStatus: 404, expectBody: '' }
 	];
 
 	let passed = 0;

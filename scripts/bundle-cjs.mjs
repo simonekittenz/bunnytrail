@@ -12,17 +12,18 @@
  * Runs in the consumer's project root (process.cwd()). The adapter-node output
  * directory defaults to <cwd>/ipad-build and can be overridden with --out-dir.
  *
- * Three module-scope top-level await (TLA) sites block a straight esbuild
+ * Two module-scope top-level await (TLA) sites block a straight esbuild
  * ESM→CJS pass (esbuild refuses to emit CJS when any TLA is in the graph):
  *
- *   1. server/chunks/handler-*.js  `await server.init({...})` at col 0
- *   2. index.js                    `await rm(path)` inside module-scope else{}
- *   3. server/chunks/chunks/utils.js-*.js  `await import(...)` in try{} at col 0
+ *   1. server/adapter-node-handler.js  `await server.init({...})` at col 0
+ *   2. server/adapter-index.js         `await rm(path)` inside module-scope else{}
  *
- * Strategy: patch all three files in-place in ipad-build/, run esbuild,
- * then restore the originals (so the .mjs ESM paths remain usable too).
+ * Strategy: patch both files (and adapter-node.js, whose `import.meta.url` is
+ * rewritten to `__dirname`) in-place in ipad-build/, run esbuild, then restore
+ * the originals (so the .mjs ESM paths remain usable too). The remaining
+ * patches rewrite the CJS bundle text for Node.js Lab's vm2 sandbox; each one
+ * warns (or the summary at the end does) when its anchor stops matching.
  *
- * `import.meta.url` in env.js is rewritten automatically by esbuild (→ __dirname).
  */
 
 import { build } from 'esbuild';
@@ -43,76 +44,70 @@ function readOut(rel)        { return readFileSync(resolve(out, rel), 'utf8'); }
 function writeOut(rel, src)  { writeFileSync(resolve(out, rel), src); }
 function glob(pattern)       { return globSync(pattern, { cwd: out }); }
 
-// ── Locate dynamic chunk filenames ───────────────────────────────────────────
-const handlerChunks = glob('server/chunks/handler-*.js');
-const utilsChunks   = glob('server/chunks/chunks/utils.js-*.js');
-
-if (handlerChunks.length !== 1) throw new Error(`bundle-cjs: expected 1 handler chunk, found ${handlerChunks.length}`);
-if (utilsChunks.length   !== 1) throw new Error(`bundle-cjs: expected 1 utils chunk, found ${utilsChunks.length}`);
-
-const handlerChunk = handlerChunks[0];   // e.g. server/chunks/handler-abc.js
-const utilsChunk   = utilsChunks[0];     // e.g. server/chunks/chunks/utils.js-xyz.js
+// ── Locate adapter-node output files ─────────────────────────────────────────
+// adapter-node 6 (SvelteKit 3) bundles its own runtime with rolldown into
+// fixed-name files:
+//   index.js                       re-exports ./server/adapter-index.js (the listener)
+//   server/adapter-index.js        http server + `await rm(path)` in module-scope else{}
+//   server/adapter-node-handler.js request handler + `await server.init(...)` at col 0
+//   adapter-node.js                manifest module; `dirname(fileURLToPath(import.meta.url))`
+const HANDLER_FILE = 'server/adapter-node-handler.js';
+const LISTENER_FILE = 'server/adapter-index.js';
+const MANIFEST_FILE = 'adapter-node.js';
+for (const f of [HANDLER_FILE, LISTENER_FILE, MANIFEST_FILE]) {
+  if (glob(f).length !== 1) throw new Error(`bundle-cjs: ${f} not found in ${out} — adapter-node layout may have changed`);
+}
 
 // ── Save originals so we can restore after bundling ──────────────────────────
-const origHandler = readOut(handlerChunk);
-const origUtils   = readOut(utilsChunk);
-const origIndex   = readOut('index.js');
-const origEnv     = readOut('env.js');
+const origHandler = readOut(HANDLER_FILE);
+const origListener = readOut(LISTENER_FILE);
+const origManifest = readOut(MANIFEST_FILE);
 
-// ── Patch 1: handler chunk — `await server.init({...})` ──────────────────────
-// Wrap in async IIFE, store promise on globalThis so index.js can await it
+// ── Patch 1: handler — `await server.init({...})` ────────────────────────────
+// Wrap in async IIFE, store promise on globalThis so the listener can await it
 // without a named import (esbuild may rename exported variables).
 if (!/^await server\.init\b/m.test(origHandler)) {
-  throw new Error('bundle-cjs: `await server.init` not found in handler chunk — adapter-node may have changed');
+  throw new Error('bundle-cjs: `await server.init` not found in handler — adapter-node may have changed');
 }
 const patchedHandler = origHandler.replace(
   /^(await server\.init\(\{)([\s\S]*?)(\}\);)$/m,
   'globalThis.__btInitPromise = (async () => { await server.init({$2$3 })();'
 );
-writeOut(handlerChunk, patchedHandler);
+writeOut(HANDLER_FILE, patchedHandler);
 
-// ── Patch 2: index.js — `await rm(path)` inside module-scope else{} ──────────
-// Wrap the entire `if (socket_activation) { ... } else { ... }` block in an
-// async IIFE that first awaits globalThis.__btInitPromise.
-let patchedIndex = origIndex;
-
-const listenBlockRe = /^(if \(socket_activation\) \{[\s\S]+?^\})\n/m;
-if (!listenBlockRe.test(patchedIndex)) {
-  writeOut(handlerChunk, origHandler);
-  throw new Error('bundle-cjs: socket_activation block not found in index.js — adapter-node may have changed');
+// ── Patch 2: listener — `await rm(path)` inside module-scope else{} ──────────
+// Wrap the `if (socket_activation) ... else { ... }` block in an async IIFE
+// that first awaits globalThis.__btInitPromise.
+const listenBlockRe = /^(if \(socket_activation\) [\s\S]*?^else \{[\s\S]*?^\})\n/m;
+if (!listenBlockRe.test(origListener)) {
+  writeOut(HANDLER_FILE, origHandler);
+  throw new Error('bundle-cjs: socket_activation block not found in adapter-index.js — adapter-node may have changed');
 }
-patchedIndex = patchedIndex.replace(
-  listenBlockRe,
-  (_, block) => `(async () => {\n  await globalThis.__btInitPromise;\n${block}\n})();\n`
+writeOut(
+  LISTENER_FILE,
+  origListener.replace(
+    listenBlockRe,
+    (_, block) => `(async () => {\n  await globalThis.__btInitPromise;\n${block}\n})();\n`
+  )
 );
-writeOut('index.js', patchedIndex);
 
-// ── Patch 3: utils.js — `await import(...)` in module-scope try{} ────────────
-// This is a dev-only stack-trace helper that only appears when the app is built
-// with dev=true. In CJS, require() is synchronous — replace the dynamic imports.
-// When absent (production build without dev=true), skip silently.
-const dynamicImportTryBlock =
-  /^try \{\n\tconst path = await import\('node:path'\);\n\tconst process = await import\('node:process'\);\n\trelative = \(file\) => path\.relative\(process\.cwd\(\), file\);\n\} catch \{\}/m;
+// ── Patch 3 (removed): the dev-only `await import('node:path')` try-block in
+// utils is gone in SvelteKit 3. Esbuild reports any remaining top-level await.
 
-if (dynamicImportTryBlock.test(origUtils)) {
-  const patchedUtils = origUtils.replace(
-    dynamicImportTryBlock,
-    `try {\n\tconst path = require('node:path');\n\tconst process = require('node:process');\n\trelative = (file) => path.relative(process.cwd(), file);\n} catch {}`
-  );
-  writeOut(utilsChunk, patchedUtils);
-}
-// (if the block is absent, origUtils is used as-is — no write needed)
-
-// ── Patch 4: env.js — `fileURLToPath(import.meta.url)` → `__filename` ────────
+// ── Patch 4: manifest — `fileURLToPath(import.meta.url)` → `__dirname` ───────
 // In CJS, __dirname is the directory of the current file — exactly what
-// env.js wants. Replace the ESM-only pattern directly.
-if (!/fileURLToPath\(import\.meta\.url\)/.test(origEnv)) {
-  throw new Error('bundle-cjs: fileURLToPath(import.meta.url) not found in env.js — adapter-node may have changed');
+// the manifest's `dir` export wants (ipad-build/).
+if (!/dirname\(fileURLToPath\(import\.meta\.url\)\)/.test(origManifest)) {
+  writeOut(HANDLER_FILE, origHandler);
+  writeOut(LISTENER_FILE, origListener);
+  throw new Error('bundle-cjs: dirname(fileURLToPath(import.meta.url)) not found in adapter-node.js — adapter-node may have changed');
 }
-const patchedEnv = origEnv
-  .replace(`import { fileURLToPath } from 'node:url';\n`, '')
-  .replace('path.dirname(fileURLToPath(import.meta.url))', '__dirname');
-writeOut('env.js', patchedEnv);
+writeOut(
+  MANIFEST_FILE,
+  origManifest
+    .replace(`import { fileURLToPath } from 'node:url';\n`, '')
+    .replace('dirname(fileURLToPath(import.meta.url))', '__dirname')
+);
 
 // ── esbuild: bundle everything to CJS ────────────────────────────────────────
 console.log('[bt-build-ipad] bundling to server.cjs …');
@@ -149,10 +144,9 @@ try {
 }
 
 // ── Restore patched files ─────────────────────────────────────────────────────
-writeOut(handlerChunk, origHandler);
-writeOut('index.js',   origIndex);
-writeOut(utilsChunk,   origUtils);
-writeOut('env.js',     origEnv);
+writeOut(HANDLER_FILE,  origHandler);
+writeOut(LISTENER_FILE, origListener);
+writeOut(MANIFEST_FILE, origManifest);
 
 if (buildError) throw buildError;
 
@@ -189,19 +183,23 @@ if (remaining) {
 // vm2 (used by Node.js Lab) throws synchronously on dynamic import(), so
 // .catch() doesn't help. Replace with a synchronous require() in try/catch.
 //
-// The variable name (als, als2, …) and indentation vary across SvelteKit
-// versions — use a regex so we match regardless of those details.
-// Pattern: import("node:async_hooks").then((hooks) => <varName> = new hooks.AsyncLocalStorage()).catch(...)
+// SvelteKit 3 has two sites; variable names (als, als2, hooks2, noop3, …)
+// vary with esbuild's renaming, so match them with regexes.
 {
-  const asyncHooksRe = /import\("node:async_hooks"\)\.then\(\(hooks\) => (\w+) = new hooks\.AsyncLocalStorage\(\)\)\.catch\(\(\) => \{[\r\n]+\s*\}\);/;
-  const ahMatch = cjsBundle.match(asyncHooksRe);
-  if (ahMatch) {
-    const varName = ahMatch[1];
-    cjsBundle = cjsBundle.replace(
-      asyncHooksRe,
-      `try { ${varName} = new (require("async_hooks").AsyncLocalStorage)(); } catch (_) {}`
-    );
-  } else {
+  // Site 1: `import("node:async_hooks").then((hooks) => als = new hooks.AsyncLocalStorage()).catch(() => {});`
+  const site1 = /import\("node:async_hooks"\)\.then\(\((\w+)\) => (\w+) = new \1\.AsyncLocalStorage\(\)\)\.catch\(\(\) => \{[\r\n\s]*\}\);/;
+  // Site 2: `als_import ??= import("node:async_hooks").then((hooks) => { als2 = new hooks.AsyncLocalStorage(); }).then(noop3, noop3);`
+  const site2 = /(\w+) \?\?= import\("node:async_hooks"\)\.then\(\((\w+)\) => \{\s*(\w+) = new \2\.AsyncLocalStorage\(\);\s*\}\)\.then\(\w+, \w+\);/;
+  let hit = false;
+  cjsBundle = cjsBundle.replace(site1, (_, _h, v) => {
+    hit = true;
+    return `try { ${v} = new (require("async_hooks").AsyncLocalStorage)(); } catch (_) {}`;
+  });
+  cjsBundle = cjsBundle.replace(site2, (_, imp, _h, v) => {
+    hit = true;
+    return `${imp} ??= (() => { try { ${v} = new (require("async_hooks").AsyncLocalStorage)(); } catch (_) {} return Promise.resolve(); })();`;
+  });
+  if (!hit) {
     console.warn('[bt-build-ipad] WARNING: Patch 6 (async_hooks dynamic import) did not match — vm2 may crash on first request');
   }
 }
@@ -257,21 +255,35 @@ cjsBundle = cjsBundle.replace(
 // ── Patch 11: remove AbortController from getRequest ─────────────────────────
 // node-fetch's Request validates signal instanceof AbortSignal|EventTarget.
 // vm2 strips both from the sandbox so our polyfill can't pass the check.
-// The signal is only used to abort request body streams on disconnect —
+// The signal is only used to abort request bodies on disconnect —
 // irrelevant for a local SSR server. Remove it entirely.
-cjsBundle = cjsBundle.replace(
-  `  const controller2 = new AbortController();\n  let errored = false;\n  let end_emitted = false;\n  request.once("error", () => errored = true);\n  request.once("end", () => end_emitted = true);\n  request.once("close", () => {\n    if ((errored || request.destroyed) && !end_emitted) {\n      controller2.abort();\n    }\n  });\n  return new Request(base2 + request.url, {\n    // @ts-expect-error\n    duplex: "half",\n    method: request.method,\n    headers: Object.entries(headers2),\n    signal: controller2.signal,`,
-  `  return new Request(base2 + request.url, {\n    // @ts-expect-error\n    duplex: "half",\n    method: request.method,\n    headers: Object.entries(headers2),`
-);
+{
+  const controllerRe =
+    /  const controller = new AbortController\(\);\n  request\.once\("close", \(\) => \{[\s\S]*?\n  \}\);\n  response\?\.once\("close", \(\) => \{[\s\S]*?\n  \}\);\n/;
+  if (controllerRe.test(cjsBundle) && /signal: controller\.signal,\n/.test(cjsBundle)) {
+    cjsBundle = cjsBundle
+      .replace(controllerRe, '  // [bundle-cjs] Patch 11: AbortController removed (vm2 cannot validate its signal)\n')
+      .replace(/    signal: controller\.signal,\n/, '');
+  } else {
+    console.warn('[bt-build-ipad] WARNING: Patch 11 (getRequest AbortController) did not match');
+  }
+}
 
 // ── Patch 12: generate_nonce — use randomBytes instead of crypto.getRandomValues
 // vm2 proxies Uint8Array instances and they lose their typed-array identity
 // when passed to native crypto.getRandomValues(). Use Node's require('crypto')
 // randomBytes instead, which works fine through vm2.
-cjsBundle = cjsBundle.replace(
-  `function generate_nonce() {\n  crypto.getRandomValues(array);\n  return btoa(String.fromCharCode(...array));\n}`,
-  `function generate_nonce() {\n  const _arr = require('crypto').randomBytes(16);\n  return btoa(String.fromCharCode(..._arr));\n}`
-);
+{
+  const nonceRe = /function generate_nonce\(\) \{\n  crypto\.getRandomValues\(array\);\n  return (\w+)\(array\);\n\}/;
+  if (nonceRe.test(cjsBundle)) {
+    cjsBundle = cjsBundle.replace(
+      nonceRe,
+      (_, enc) => `function generate_nonce() {\n  return ${enc}(require('crypto').randomBytes(16));\n}`
+    );
+  } else {
+    console.warn('[bt-build-ipad] WARNING: Patch 12 (generate_nonce) did not match');
+  }
+}
 
 // ── Patch 13: setResponse — handle vm2 cross-boundary chunk conversion ────────
 // node-fetch's Response.body is a Node Readable (EventEmitter with .pipe),
@@ -280,33 +292,79 @@ cjsBundle = cjsBundle.replace(
 // chunks arrive in host context as plain proxied Objects. Node's res.write() rejects
 // them ("chunk must be string or Buffer or Uint8Array") and falls back to toString(),
 // producing comma-separated decimal numbers ("60,33,100,...") instead of HTML.
-// Fix: use a manual data/end handler instead of .pipe(), and convert each chunk to
-// a string via TextDecoder (available in sandbox via Patch 7's globalThis injection).
+// Fix: use a manual data/end handler instead of a reader loop, and convert each chunk
+// to a string via TextDecoder (available in sandbox via Patch 7's globalThis injection).
 // TextDecoder.decode() also rejects vm2-proxied TypedArrays, so we must first spread
 // the chunk into a real Uint8Array using Uint8Array.from(Array.from(chunk)).
 //
-// The noop function name (noop4/noop5/...) varies with esbuild output. Normalise it
-// to a stable placeholder before matching, then restore it after.
+// SvelteKit 3's setResponse buffers/probes the first chunks before calling
+// res.writeHead(); this replaces everything after the `response.body.locked`
+// guard, so it also takes over writeHead().
 {
-  const noopMatch = cjsBundle.match(/reader\.cancel\(error2\)\.catch\((noop\d+)\)/);
-  const noopName = noopMatch ? noopMatch[1] : 'noop5';
-  const target = `  const reader = response.body.getReader();\n  if (res.destroyed) {\n    void reader.cancel();\n    return;\n  }\n  const cancel = (error2) => {\n    res.off("close", cancel);\n    res.off("error", cancel);\n    reader.cancel(error2).catch(${noopName});\n    if (error2) res.destroy(error2);\n  };\n  res.on("close", cancel);\n  res.on("error", cancel);\n  void next2();\n  async function next2() {\n    try {\n      for (; ; ) {\n        const { done, value } = await reader.read();\n        if (done) break;\n        if (!res.write(value)) {\n          res.once("drain", next2);\n          return;\n        }\n      }\n      res.end();\n    } catch (error2) {\n      cancel(error2 instanceof Error ? error2 : new Error(String(error2)));\n    }\n  }`;
-  cjsBundle = cjsBundle.replace(
-    target,
-    `  // [bundle-cjs] Patch 13: manual pipe with chunk conversion for vm2 compatibility.\n  // response.body is a node-fetch Node Readable (no getReader). Chunks are Uint8Array\n  // but arrive at res.write() as vm2-proxied plain Objects. Convert via Uint8Array.from\n  // + TextDecoder so they cross the vm2→host boundary as plain UTF-8 strings.\n  const body = response.body;\n  const _bodyDec = new TextDecoder();\n  const _writeChunk = (chunk) => {\n    try {\n      const u = Uint8Array.from(Array.from(chunk));\n      const s = _bodyDec.decode(u, {stream: true});\n      if (s) res.write(s);\n    } catch(_) {\n      // fallback: try writing directly\n      if (chunk) try { res.write(chunk); } catch(__) {}\n    }\n  };\n  if (res.destroyed) { body.destroy?.(); return; }\n  body.on('error', (e) => res.destroy(e));\n  body.on('data', _writeChunk);\n  body.on('end', () => { const _tail = _bodyDec.decode(); if (_tail) res.write(_tail); res.end(); });`
-  );
-  if (!cjsBundle.includes('_bodyDec')) throw new Error('bundle-cjs: Patch 13 (setResponse) did not apply — esbuild output may have changed');
+  const startRe = /  const reader = response\.body\.getReader\(\);\n/;
+  const endMarker = '\n}\nfunction createReadableStream';
+  const si = cjsBundle.search(startRe);
+  const ei = si === -1 ? -1 : cjsBundle.indexOf(endMarker, si);
+  if (si !== -1 && ei !== -1) {
+    const replacement = `  // [bundle-cjs] Patch 13: manual pipe with chunk conversion for vm2 compatibility.
+  // response.body is a node-fetch Node Readable (no getReader). Chunks are Uint8Array
+  // but arrive at res.write() as vm2-proxied plain Objects. Convert via Uint8Array.from
+  // + TextDecoder so they cross the vm2→host boundary as plain UTF-8 strings.
+  const body = response.body;
+  const _bodyDec = new TextDecoder();
+  const _writeChunk = (chunk) => {
+    try {
+      const u = Uint8Array.from(Array.from(chunk));
+      const s = _bodyDec.decode(u, {stream: true});
+      if (s) res.write(s);
+    } catch(_) {
+      // fallback: try writing directly
+      if (chunk) try { res.write(chunk); } catch(__) {}
+    }
+  };
+  if (res.destroyed) { body.destroy?.(); return; }
+  res.writeHead(response.status);
+  body.on('error', (e) => res.destroy(e));
+  body.on('data', _writeChunk);
+  body.on('end', () => { const _tail = _bodyDec.decode(); if (_tail) res.write(_tail); res.end(); });`;
+    cjsBundle = cjsBundle.slice(0, si) + replacement + cjsBundle.slice(ei);
+  }
+}
+
+// ── Patch 21: createRequire(import.meta.url) shims from ESM-only deps ─────────
+// Some ESM-first dependencies (dotenv 18) bundle a `createRequire(import.meta.url)`
+// shim to reach Node builtins. In a CJS bundle `import.meta` is empty and vm2
+// blocks require("module") outright. The bundle already has a working `require`,
+// so point the shim at it and neutralise the `module` import.
+{
+  const createRequireRe = /\(0, (import_node_module\d*)\.createRequire\)\((\w+)\.url\)/g;
+  const names = new Set();
+  cjsBundle = cjsBundle.replace(createRequireRe, (_, mod) => {
+    names.add(mod);
+    return 'require';
+  });
+  for (const mod of names) {
+    cjsBundle = cjsBundle.replace(
+      new RegExp(`${mod} = require\\("(?:node:)?module"\\);`),
+      `${mod} = { createRequire: () => require };`
+    );
+  }
 }
 
 // ── Patch 14: strip node: prefix and fix vm2-incompatible requires ───────────
 // vm2 doesn't recognise the `node:` protocol prefix on builtin module names.
 cjsBundle = cjsBundle.replaceAll(`require("node:`, `require("`);
 // vm2 provides process/buffer/timers as globals but blocks require() for them.
-// Replace bare requires with references to the globals directly.
+// Replace bare requires with references to the globals directly. Also match
+// the `__require(...)` form rolldown emits for inlined CJS deps (yaml, …) — a
+// plain substring replace would corrupt it into `__process`, so anchor on a
+// non-identifier character before `require`.
 cjsBundle = cjsBundle
-  .replaceAll(`require("process")`, `process`)
-  .replaceAll(`require("buffer")`, `require("buffer")`) // keep — vm2 allows this
-  .replaceAll(`require("timers")`, `({ setTimeout, clearTimeout, setInterval, clearInterval, setImmediate, clearImmediate })`);
+  .replace(/(?<![\w$])(?:__)?require\("process"\)/g, `process`)
+  .replace(
+    /(?<![\w$])(?:__)?require\("timers"\)/g,
+    `({ setTimeout, clearTimeout, setInterval, clearInterval, setImmediate, clearImmediate })`
+  ); // require("buffer") is kept as-is — vm2 allows it
 
 // ── Patch 15: remove SIGTERM/SIGINT listeners — vm2 blocks them ──────────────
 cjsBundle = cjsBundle
@@ -320,9 +378,11 @@ cjsBundle = cjsBundle
 // trap blocks ALL Object.defineProperty calls on it (returns falsish → TypeError).
 // On SSR the reactive callbacks have no effect. Fix: replace the function body so
 // it just returns a plain `new URL(url)` directly, skipping every defineProperty.
+// Matched by shape (not exact text) because esbuild renames `url` → `url2` etc.
 cjsBundle = cjsBundle.replace(
-  `function make_trackable(url, callback, search_params_callback, allow_hash = false) {\n  const tracked = new URL(url);\n  Object.defineProperty(tracked, "searchParams", {\n    value: new Proxy(tracked.searchParams, { get(obj, key2) {\n      if (key2 === "get" || key2 === "getAll" || key2 === "has") return (param, ...rest) => {\n        search_params_callback(param);\n        return obj[key2](param, ...rest);\n      };\n      callback();\n      const value = Reflect.get(obj, key2);\n      return typeof value === "function" ? value.bind(obj) : value;\n    } }),\n    enumerable: true,\n    configurable: true\n  });\n  const tracked_url_properties = [\n    "href",\n    "pathname",\n    "search",\n    "toString",\n    "toJSON"\n  ];\n  if (allow_hash) tracked_url_properties.push("hash");\n  for (const property of tracked_url_properties) Object.defineProperty(tracked, property, {\n    get() {\n      callback();\n      return url[property];\n    },\n    enumerable: true,\n    configurable: true\n  });\n  tracked[/* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom")] = (_depth, opts, inspect) => {\n    return inspect(url, opts);\n  };\n  tracked.searchParams[/* @__PURE__ */ Symbol.for("nodejs.util.inspect.custom")] = (_depth, opts, inspect) => {\n    return inspect(url.searchParams, opts);\n  };\n  if (!allow_hash) disable_hash(tracked);\n  return tracked;\n}`,
-  `function make_trackable(url, callback, search_params_callback, allow_hash = false) {\n  // [bundle-cjs] Patch 16: skip all Object.defineProperty overrides.\n  // vm2 wraps native URL objects in a proxy that blocks defineProperty.\n  // On SSR the tracking callbacks are no-ops. Return the raw URL directly.\n  return new URL(url);\n}`
+  /^function make_trackable\((\w+), callback, search_params_callback, allow_hash = false\) \{[\s\S]*?^\}$/m,
+  (_, urlVar) =>
+    `function make_trackable(${urlVar}, callback, search_params_callback, allow_hash = false) {\n  // [bundle-cjs] Patch 16: skip all Object.defineProperty overrides.\n  // vm2 wraps native URL objects in a proxy that blocks defineProperty.\n  // On SSR the tracking callbacks are no-ops. Return the raw URL directly.\n  return new URL(${urlVar});\n}`
 );
 
 // ── Patch 17: node-fetch Headers constructor Proxy — fix default Reflect.get ──
@@ -785,20 +845,21 @@ const LIVE_SWAP_MIDDLEWARE = `
 const ORIGIN_LINE = `if (!process.env.ORIGIN) process.env.ORIGIN = "http://localhost:3000";\n\n`;
 cjsBundle = cjsBundle.replace(ORIGIN_LINE, () => ORIGIN_LINE + LIVE_SWAP_MIDDLEWARE + '\n');
 
-// Wire the middleware into the polka sequence array, before serve_prerendered.
-// The path import alias (import_node_pathN) varies with each esbuild output —
-// use a regex replace to match any numbered alias.
+// Wire the middleware in front of the static/prerendered file server.
+// adapter-node 5 composed `[serve(client), serve_prerendered(), ssr]` with polka;
+// adapter-node 6 composes a single `handler = (req, res, next) => serve(req, res, () => ssr(...))`
+// where `serve` covers client assets AND prerendered pages from one recorded
+// file map. The live-swap middleware only claims content entity paths and
+// otherwise calls next(), so putting it first is safe.
 {
-  const seqMatch = cjsBundle.match(
-    /\[serve\((import_node_path\d+\.default\.join\(dir, "client"\)), true\), serve_prerendered\(\), ssr\]/
-  );
-  if (seqMatch) {
+  const handlerRe = /^var handler = \(req, res, next\) => serve\(req, res, \(\) => ssr\(req, res, next\)\);$/m;
+  if (handlerRe.test(cjsBundle)) {
     cjsBundle = cjsBundle.replace(
-      seqMatch[0],
-      `[serve(${seqMatch[1]}, true), globalThis.__btLiveSwap, serve_prerendered(), ssr]`
+      handlerRe,
+      'var handler = (req, res, next) => globalThis.__btLiveSwap(req, res, () => serve(req, res, () => ssr(req, res, next)));'
     );
   } else {
-    console.warn('[bt-build-ipad] WARNING: polka sequence array not found — live swap middleware not wired');
+    console.warn('[bt-build-ipad] WARNING: handler composition not found — live swap middleware not wired');
   }
 }
 
@@ -807,7 +868,7 @@ const _verifyPatches = {
   'Patch 13 (setResponse body)': '_bodyDec',
   'Patch 17 (Headers Proxy)': 'Patch 17: bind to target',
   'Patch 19 (Body Uint8Array)': 'Patch 19: vm2-proxied Uint8Array',
-  'Patch 20 (live swap wired)': 'globalThis.__btLiveSwap, serve_prerendered',
+  'Patch 20 (live swap wired)': 'globalThis.__btLiveSwap(req, res',
   'Patch 20 (bootstrap strip)': 'kit\\.start\\(',
   'Patch 20 (wikilink resolve)': '_resolveWikilinkTarget',
 };
