@@ -146,9 +146,6 @@
 					<tr id={entry.id ? `w-${entry.id}` : undefined}>
 						<td class="cell-word">
 							<span class="word-text">{entry.word}</span>
-							{#if entry.forms.length}
-								<span class="word-forms">{entry.forms.join(', ')}</span>
-							{/if}
 						</td>
 						{#if showIpa}
 							<td class="cell-ipa">
@@ -320,13 +317,6 @@
 	.word-text {
 		font-style: italic;
 		font-family: var(--font-conlang);
-	}
-
-	.word-forms {
-		display: block;
-		font-family: var(--font-conlang);
-		font-size: var(--text-xs);
-		color: var(--ink-faint);
 	}
 
 	/* Deep links from interlinear glosses land on `#w-<id>`. */
