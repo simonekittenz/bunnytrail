@@ -74,6 +74,14 @@ export interface Translations {
 	entity_tab_holders: string;
 	entity_tab_statistics: string;
 	entity_tab_vocabulary: string;
+	section_overview: string;
+	section_dictionary: string;
+	section_nav_aria: string;
+	section_prev: string;
+	section_next: string;
+	dictionary_filter: string;
+	dictionary_no_match: string;
+	dictionary_word_count: (n: number) => string;
 	entity_rank_nav_aria: string;
 	entity_rank_prev_aria: (name: string) => string;
 	entity_rank_prev_label: string;
@@ -312,6 +320,14 @@ const en: Translations = {
 	entity_tab_holders: 'Holders',
 	entity_tab_statistics: 'Statistics',
 	entity_tab_vocabulary: 'Vocabulary',
+	section_overview: 'Overview',
+	section_dictionary: 'Dictionary',
+	section_nav_aria: 'Pages in this entry',
+	section_prev: 'Previous',
+	section_next: 'Next',
+	dictionary_filter: 'Filter words…',
+	dictionary_no_match: 'No words match.',
+	dictionary_word_count: (n) => (n === 1 ? '1 word' : `${n} words`),
 	entity_rank_nav_aria: 'Ranked navigation',
 	entity_rank_prev_aria: (name) => `Previous: ${name}`,
 	entity_rank_prev_label: 'back',
@@ -551,6 +567,14 @@ const nl: Translations = {
 	entity_tab_holders: 'Dragers',
 	entity_tab_statistics: 'Statistieken',
 	entity_tab_vocabulary: 'Woordenlijst',
+	section_overview: 'Overzicht',
+	section_dictionary: 'Woordenboek',
+	section_nav_aria: "Pagina's in dit onderdeel",
+	section_prev: 'Vorige',
+	section_next: 'Volgende',
+	dictionary_filter: 'Woorden filteren…',
+	dictionary_no_match: 'Geen woorden gevonden.',
+	dictionary_word_count: (n) => (n === 1 ? '1 woord' : `${n} woorden`),
 	entity_rank_nav_aria: 'Rangnavigatie',
 	entity_rank_prev_aria: (name) => `Vorige: ${name}`,
 	entity_rank_prev_label: 'vorige',

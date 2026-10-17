@@ -666,6 +666,270 @@ blockquote {
 	color: var(--ink-soft);
 }
 
+/* ── Tables ────────────────────────────────────────────────────
+   Every <table> in rendered prose (markdown pipe tables and raw HTML
+   alike) is wrapped by the renderer in `.bt-table-wrap` and given the
+   `bt-table` class. The wrapper scrolls sideways on narrow screens so
+   wide reference tables (phoneme charts, verb paradigms) never push
+   the page wider than the viewport.
+
+   Markdown column alignment (`:---:`) works as usual — marked emits an
+   `align` attribute on the cells. Merged headers need raw HTML
+   (`colspan` / `rowspan`); `<th scope="row">` marks row headers. */
+.bt-table-wrap {
+	overflow-x: auto;
+	max-width: 100%;
+	margin: var(--space-5) 0;
+	-webkit-overflow-scrolling: touch;
+}
+
+.bt-table-wrap:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+.bt-table {
+	border-collapse: collapse;
+	min-width: 100%;
+	font-size: var(--text-sm);
+	line-height: var(--leading-normal);
+	font-variant-numeric: tabular-nums;
+}
+
+.bt-table caption {
+	caption-side: top;
+	padding: 0 0 var(--space-2);
+	text-align: left;
+	font-style: italic;
+	color: var(--ink-soft);
+}
+
+.bt-table th,
+.bt-table td {
+	padding: var(--space-2) var(--space-3);
+	border: 1px solid var(--rule-hair);
+	text-align: left;
+	vertical-align: top;
+}
+
+.bt-table thead th {
+	background: var(--parchment-soft);
+	border-bottom: 1px solid var(--rule);
+	color: var(--ink);
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.bt-table th[scope='row'],
+.bt-table tbody th {
+	background: var(--parchment-soft);
+	color: var(--ink);
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.bt-table tbody tr:nth-child(even) > td {
+	background: var(--paper-warm);
+}
+
+/* Section dividers inside a paradigm: a row whose only cell spans the
+   whole table (`<td colspan="N">`) reads as a sub-heading. */
+.bt-table td[colspan]:only-child {
+	background: var(--parchment-deep);
+	font-weight: 600;
+	letter-spacing: 0.02em;
+}
+
+/* ── Interlinear glosses ───────────────────────────────────────
+   Rendered from ```<language> fences (see server/gloss.ts): each word
+   stacked over its dictionary gloss, with a hover/focus card carrying
+   the full entry. Pure CSS — no client script — so it behaves the same
+   in prerendered builds and on the offline bundle. */
+.bt-gloss-set {
+	display: grid;
+	gap: var(--space-4);
+	margin: var(--space-5) 0;
+}
+
+.bt-gloss {
+	margin: 0;
+	padding: var(--space-3) var(--space-4);
+	border-left: 2px solid var(--rule);
+	background: var(--paper-warm);
+}
+
+.bt-gloss__line {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-start;
+	gap: var(--space-2) var(--space-4);
+}
+
+.bt-gloss--bare .bt-gloss__line {
+	gap: var(--space-1) 0.4em;
+}
+
+.bt-gloss__w {
+	position: relative;
+	display: inline-flex;
+	flex-direction: column;
+	align-items: flex-start;
+	line-height: 1.3;
+	color: inherit;
+	text-decoration: none;
+	border-radius: var(--radius-sm);
+}
+
+.bt-gloss__w:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+.bt-gloss__src {
+	font-family: var(--font-conlang);
+	font-size: 1.1em;
+	color: var(--ink);
+	white-space: nowrap;
+}
+
+.bt-gloss__g {
+	font-size: var(--text-xs);
+	letter-spacing: 0.02em;
+	color: var(--ink-soft);
+	white-space: nowrap;
+}
+
+a.bt-gloss__w:hover .bt-gloss__src {
+	color: var(--accent);
+	text-decoration: underline dotted;
+	text-underline-offset: 0.2em;
+}
+
+.bt-gloss__w--approx .bt-gloss__g,
+.bt-gloss__w--override .bt-gloss__g {
+	font-style: italic;
+}
+
+.bt-gloss__w--unknown .bt-gloss__g {
+	color: var(--ink-faint);
+}
+
+.bt-gloss__lit,
+.bt-gloss__tr {
+	margin: var(--space-2) 0 0;
+}
+
+.bt-gloss__lit {
+	font-size: var(--text-sm);
+	font-style: italic;
+	color: var(--ink-soft);
+}
+
+.bt-gloss__lit::before {
+	content: 'lit. ';
+	font-style: normal;
+	font-variant: small-caps;
+	letter-spacing: 0.04em;
+}
+
+.bt-gloss__tr {
+	color: var(--ink);
+}
+
+.bt-gloss__tr::before {
+	content: '\201C';
+}
+
+.bt-gloss__tr::after {
+	content: '\201D';
+}
+
+/* The word card. Hidden until the word is hovered or focused. */
+.bt-gloss__tip {
+	position: absolute;
+	z-index: 20;
+	top: calc(100% + 0.25rem);
+	left: 0;
+	display: none;
+	flex-direction: column;
+	gap: 0.25rem;
+	width: max-content;
+	min-width: 10rem;
+	max-width: min(20rem, 80vw);
+	padding: var(--space-3);
+	background: var(--vellum);
+	border: 1px solid var(--rule);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-paper);
+	font-family: var(--font-body, inherit);
+	font-size: var(--text-sm);
+	line-height: var(--leading-normal);
+	text-align: left;
+	white-space: normal;
+}
+
+.bt-gloss__w:hover .bt-gloss__tip,
+.bt-gloss__w:focus-visible .bt-gloss__tip,
+.bt-gloss__w:focus-within .bt-gloss__tip {
+	display: flex;
+}
+
+/* Cards for the last few words open leftwards so they stay on screen. */
+.bt-gloss__line > .bt-gloss__w:nth-last-child(-n + 3) .bt-gloss__tip {
+	left: auto;
+	right: 0;
+}
+
+.bt-gloss__tip-top {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0 var(--space-2);
+}
+
+.bt-gloss__tip-head {
+	font-family: var(--font-conlang);
+	font-weight: 600;
+	color: var(--ink);
+}
+
+.bt-gloss__tip-ipa {
+	font-family: var(--font-ipa);
+	color: var(--ink-soft);
+}
+
+.bt-gloss__tip-pos {
+	font-style: italic;
+	color: var(--ink-faint);
+}
+
+.bt-gloss__tip-meaning {
+	color: var(--ink);
+}
+
+.bt-gloss__tip-parts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 var(--space-3);
+	padding-top: 0.25rem;
+	border-top: 1px solid var(--rule-hair);
+	font-size: var(--text-xs);
+	color: var(--ink-soft);
+}
+
+.bt-gloss__tip-part b {
+	font-family: var(--font-conlang);
+	font-weight: 600;
+	color: var(--ink);
+}
+
+.bt-gloss__tip-alts,
+.bt-gloss__tip-note {
+	font-size: var(--text-xs);
+	font-style: italic;
+	color: var(--ink-faint);
+}
+
 /* ── Kind tree nodes ───────────────────────────────────────────
    Shared between KindsIndexPage and KindPage. */
 .bt-kind-link {

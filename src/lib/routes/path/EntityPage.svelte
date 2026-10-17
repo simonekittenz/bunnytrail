@@ -10,6 +10,7 @@
 	import Tag from '#lib/components/Tag.svelte';
 	import StatisticsPanel from '#lib/components/StatisticsPanel.svelte';
 	import VocabularyTable from '#lib/components/VocabularyTable.svelte';
+	import SectionNav from '#lib/components/SectionNav.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { relationLabel } from '#lib/types.js';
 	import { toRoman } from '#lib/types.js';
@@ -59,7 +60,9 @@
 	const hasClassMates = $derived(data.classMates.length > 0);
 	const hasQualifierHolders = $derived(data.qualifierHolders.length > 0);
 	const hasStatistics = $derived(data.statistics.length > 0);
-	const hasVocabulary = $derived(data.vocabulary.length > 0);
+	// A language with its own dictionary page links there (via the section
+	// nav) instead of repeating the word list as an inline tab.
+	const hasVocabulary = $derived(data.vocabulary.length > 0 && !data.hasDictionaryPage);
 	const hasTabs = $derived(hasClassMates || hasQualifierHolders || hasStatistics || hasVocabulary);
 	const VALID_TABS = ['about', 'instances', 'holders', 'statistics', 'vocabulary'] as const;
 	type TabId = (typeof VALID_TABS)[number];
@@ -356,6 +359,8 @@
 	{#if data.entity.aliases.length > 0}
 		<p class="aliases"><em>{ui.entity_also_known_as} {data.entity.aliases.join(', ')}</em></p>
 	{/if}
+
+	<SectionNav items={data.sectionNav} active="overview" />
 
 	{#if hasTabs}
 		<div class="tabs" role="tablist" aria-label={ui.entity_sections_aria}>

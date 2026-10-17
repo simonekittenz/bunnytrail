@@ -618,6 +618,25 @@ export interface EntityMeta {
 		language?: string;
 	}>;
 	/**
+	 * Ordered slugs of reader-facing sub-pages. Each `<slug>` names a
+	 * markdown file `<slug>.md` that sits next to this entity's
+	 * `index.md`; the page title comes from the file's first `# Heading`
+	 * (falling back to the humanised slug). Rendered as a tab-style nav
+	 * on the entity and at `/<entity-id>/<slug>`.
+	 *
+	 * Meant for long reference material that doesn't belong on the main
+	 * page — a language's phonology, grammar and history, say. Reserved
+	 * slugs: `craft`, `chapters`, `dictionary`.
+	 */
+	sections?: string[];
+	/**
+	 * Alphabet order for a `language` entity's dictionary, digraphs
+	 * allowed: `[a, b, ch, d, …]`. Words are split greedily into these
+	 * letters and sorted in this order, ignoring tone marks. Without it
+	 * the dictionary falls back to the locale's alphabetical order.
+	 */
+	collation?: string[];
+	/**
 	 * Population statistics blocks. Each element groups a population entry
 	 * with optional `within: <worldId>` sub-group membership and a
 	 * `population` array of slices (species percentages / counts).
@@ -724,6 +743,59 @@ export interface Entity {
 	 * `null` when no `craft.md` exists.
 	 */
 	craft: string | null;
+	/**
+	 * Reader-facing sub-pages declared by `meta.sections`, in the
+	 * declared order. Unlike `craft`, section prose is canonical: its
+	 * wikilinks merge into the entity's `wikilinks` so backlinks reflect
+	 * it. Empty when the entity declares none.
+	 */
+	sections: Section[];
+	/**
+	 * Rows from an optional `lexicon.yaml` next to `index.md`: the
+	 * entity's own dictionary. Merged into the vocabulary index, so they
+	 * show up on the language's dictionary page and feed the interlinear
+	 * glossing of language-tagged code fences.
+	 */
+	lexicon: LexiconRow[];
+}
+
+/** A reader-facing sub-page of an entity (see `EntityMeta.sections`). */
+export interface Section {
+	/** File slug: `<slug>.md` next to the entity's `index.md`. */
+	slug: string;
+	/** Display title: first `# Heading`, else the humanised slug. */
+	title: string;
+	/** Markdown body with the leading `# Heading` removed. */
+	body: string;
+	/** Absolute path on disk (for diagnostics). */
+	mdPath: string;
+}
+
+/** One link in the tab-style nav across an entity's sub-pages. */
+export interface SectionNavItem {
+	/** `overview` is the entity page itself; `dictionary` is the built-in word list. */
+	key: 'overview' | 'section' | 'dictionary';
+	/** Section slug for `section` items, else the key. */
+	slug: string;
+	/** Display title for `section` items; the UI supplies the label for the others. */
+	title: string | null;
+	href: string;
+}
+
+/** One normalised row of an entity's `lexicon.yaml`. */
+export interface LexiconRow {
+	word: string;
+	meaning: string | null;
+	pos: string | null;
+	notes: string | null;
+	/** Pronunciation, written without surrounding slashes. */
+	ipa: string | null;
+	/** Short interlinear label (`LOC`, `love`); defaults to the meaning. */
+	gloss: string | null;
+	/** Extra surface forms (inflections, variants) that resolve here. */
+	forms: string[];
+	/** Free-form class tag — verb class, noun class, declension. */
+	cls: string | null;
 }
 
 /**
@@ -1084,6 +1156,18 @@ export interface VocabEntry {
 	pos: string | null;
 	/** Usage notes, etymology, context. */
 	notes: string | null;
+	/** Pronunciation, without surrounding slashes. */
+	ipa: string | null;
+	/** Short interlinear label; see `LexiconRow.gloss`. */
+	gloss: string | null;
+	/** Extra surface forms that resolve to this entry. */
+	forms: string[];
+	/** Free-form class tag (verb class, declension, …). */
+	cls: string | null;
+	/** Stable anchor on the dictionary page (`w-<id>`); unique per language. */
+	id: string;
+	/** Fixed-width collation key: plain string order is dictionary order. */
+	sortKey: string;
 	/** Short language code (e.g. "bu"), for display as an inline pill. */
 	langCode: string | null;
 	/** URL to the language entity page, for the pill link. */

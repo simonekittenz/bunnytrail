@@ -204,6 +204,53 @@ requiring a separate `_collection.yaml` file.
 - `toRoman(n)` in `src/lib/types.ts` converts an integer to a Roman
   numeral string; use it wherever `rankDisplay === 'roman'`.
 
+## Sections, dictionaries and glossed text
+
+Reference-heavy entities (a conlang's grammar, say) are supported by
+three small, generic pieces. They live in the engine as data shapes;
+the content is the world's.
+
+**Sections** (`EntityMeta.sections`, `Entity.sections`). A list of file
+slugs in `index.md` frontmatter; each `<slug>.md` next to `index.md`
+becomes `/<entity-id>/<slug>`. Loaded by `loadSections` in `walker.ts`
+(title from the first `# Heading`; reserved slugs `craft`, `chapters`,
+`dictionary`; a slug may not equal a child folder). Section prose is
+canonical — its links merge into the entity's `wikilinks`. Dispatch is
+in `routes/path/load.ts`, enumeration for prerender in `entries()`,
+views in `SectionPage.svelte`; `SectionNav.svelte` is the tab-style nav
+shared with `EntityPage` (built by `buildSectionNav` in `subpage.ts`).
+
+**Lexicon** (`lexicon.yaml` → `Entity.lexicon` → the vocabulary index).
+`loadLexicon` normalises rows; `graph.#buildVocabIndex` merges them with
+`vocabulary:` blocks, sorts by the language's `collation` (alphabet order
+with digraphs; `makeCollation` in `server/lexicon.ts`) and gives every
+entry a unique anchor `id`. A language with sections or a lexicon gets a
+built-in `/<id>/dictionary` page (`graph.hasDictionaryPage`), which
+replaces its inline Vocabulary tab. `VocabEntry` carries `ipa`, `gloss`,
+`forms`, `cls`, `sortKey`.
+
+**Glossed fences.** A code fence whose info string is a registered
+language code or folder slug renders as interlinear text, not `<pre>`.
+Parsing, lookup and morphology (exact → tone/apostrophe-insensitive →
+hyphen split → known suffix/prefix stripping) are pure functions in
+`server/lexicon.ts`; HTML is in `server/gloss.ts`. `markdown.ts` stays
+graph-agnostic: the graph registers a provider with `setGlossProvider`
+at module load. Everything is server-rendered and CSS-only (the word
+card is a hover/focus popover), so it works prerendered and on the iPad
+bundle. Syntax: `=` free translation, `~` literal, `word{gloss}`
+override, blank line between phrases.
+
+**Tables.** `wrapTables` in `markdown.ts` wraps every `<table>` (pipe or
+raw HTML) in `.bt-table-wrap` with class `bt-table`, so wide charts
+scroll sideways. Merged cells need raw HTML.
+
+Theming hooks (override in a world's `theme.css`): `--font-conlang`
+(invented-language words), `--font-ipa` (pronunciation); classes
+`bt-gloss`, `bt-gloss__w--{found,approx,unknown,override}`,
+`bt-gloss__src`, `bt-gloss__g`, `bt-gloss__tip`, `bt-table`,
+`bt-section-nav`. The authoring contract is in the consumer repo's
+`STRUCTURE.md`.
+
 ## Wikilinks
 
 The wikilink resolver lives in `src/lib/server/markdown.ts`. The

@@ -618,3 +618,29 @@ describe('renderSummary', () => {
 		expect(html).not.toContain('<a ');
 	});
 });
+
+describe('table wrapping', () => {
+	const render = (md: string) => renderBody(md, () => null);
+
+	it('wraps pipe tables in a scroll container with the bt-table class', () => {
+		const html = render('| A | B |\n|---|---|\n| 1 | 2 |\n');
+		expect(html).toContain('<div class="bt-table-wrap" tabindex="0"><table class="bt-table">');
+		expect(html).toContain('</table></div>');
+	});
+
+	it('wraps raw HTML tables and keeps colspan', () => {
+		const html = render('<table><tr><th colspan="3">Head</th></tr></table>');
+		expect(html).toContain('class="bt-table"');
+		expect(html).toContain('colspan="3"');
+	});
+
+	it('merges the class into a table that already has one', () => {
+		const html = render('<table class="mine"><tr><td>x</td></tr></table>');
+		expect(html).toContain('class="bt-table mine"');
+	});
+
+	it('leaves tables inside code fences alone', () => {
+		const html = render('```\n<table></table>\n```\n');
+		expect(html).not.toContain('bt-table-wrap');
+	});
+});

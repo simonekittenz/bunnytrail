@@ -4,6 +4,8 @@
 	import EntityPage from './EntityPage.svelte';
 	import ChapterPage from './ChapterPage.svelte';
 	import CraftPage from './CraftPage.svelte';
+	import SectionPage from './SectionPage.svelte';
+	import DictionaryPage from './DictionaryPage.svelte';
 	import KindsIndexPage from '../kinds/KindsIndexPage.svelte';
 	import KindPage from '../kinds/kind/KindPage.svelte';
 	import SymbologyPage from '../symbology/Page.svelte';
@@ -29,6 +31,10 @@
 	<ChapterPage {data} />
 {:else if data.kind === 'craft'}
 	<CraftPage {data} />
+{:else if data.kind === 'section'}
+	<SectionPage {data} />
+{:else if data.kind === 'dictionary'}
+	<DictionaryPage {data} />
 {:else if data.kind === 'kindsIndex'}
 	<KindsIndexPage {data} />
 {:else if data.kind === 'kindPage'}

@@ -12,7 +12,9 @@ import type {
 	EntityId,
 	EntityMeta,
 	HealthIssue,
+	LexiconRow,
 	ResolvedBookMeta,
+	Section,
 	Timeline,
 	TimelineEntry,
 	TimelineMeta
@@ -223,12 +225,23 @@ export async function walk(args: WalkArgs): Promise<void> {
 		// into the parent entity's `wikilinks` so backlinks attribute
 		// to the work as a whole.
 		const chapters = await loadChapters(join(absDir, 'chapters'), id, issues);
+		// Reader-facing sub-pages (`meta.sections`) and the entity's own
+		// dictionary (`lexicon.yaml`). Section prose is canonical, so its
+		// links merge into the entity like chapters' do.
+		const sections = meta ? await loadSections(absDir, id, meta, issues) : [];
+		const lexicon = await loadLexicon(absDir, id, issues);
 		const wikilinksFromBody = extractWikilinks(body);
 		const wikilinksFromChapters = chapters.flatMap((c) => extractWikilinks(c.body));
-		const mergedWikilinks = [...new Set([...wikilinksFromBody, ...wikilinksFromChapters])];
+		const wikilinksFromSections = sections.flatMap((sec) => extractWikilinks(sec.body));
+		const mergedWikilinks = [
+			...new Set([...wikilinksFromBody, ...wikilinksFromChapters, ...wikilinksFromSections])
+		];
 		const kindLinksFromBody = extractKindLinks(body);
 		const kindLinksFromChapters = chapters.flatMap((c) => extractKindLinks(c.body));
-		const mergedKindLinks = [...new Set([...kindLinksFromBody, ...kindLinksFromChapters])];
+		const kindLinksFromSections = sections.flatMap((sec) => extractKindLinks(sec.body));
+		const mergedKindLinks = [
+			...new Set([...kindLinksFromBody, ...kindLinksFromChapters, ...kindLinksFromSections])
+		];
 
 		// Optional sibling `craft.md` — author's-room companion. Read
 		// raw and stash on the entity; deliberately *don't* merge any
@@ -273,7 +286,9 @@ export async function walk(args: WalkArgs): Promise<void> {
 				children: [],
 				chapters,
 				book: chapters.length > 0 ? resolveBookMeta(meta.book) : null,
-				craft
+				craft,
+				sections,
+				lexicon
 			});
 
 			nextParentEntity = id;
@@ -350,6 +365,183 @@ async function loadChapters(
 	}
 	out.sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug));
 	return out;
+}
+
+/** Slugs a section may not use: they already name built-in sub-pages. */
+const RESERVED_SECTION_SLUGS = new Set(['craft', 'chapters', 'dictionary']);
+
+/**
+ * Read the pages named by `meta.sections`, in declared order. Each slug
+ * `foo` is the file `foo.md` next to `index.md`. Problems are reported
+ * as health issues and the offending slug is skipped, so one typo never
+ * hides the rest of the entity's pages.
+ */
+export async function loadSections(
+	absDir: string,
+	entityId: EntityId,
+	meta: EntityMeta,
+	issues: HealthIssue[]
+): Promise<Section[]> {
+	const raw = meta.sections;
+	if (raw === undefined || raw === null) return [];
+	if (!Array.isArray(raw) || raw.some((x) => typeof x !== 'string')) {
+		issues.push({
+			kind: 'invalid-yaml',
+			entity: entityId,
+			detail: '`sections` must be a list of file slugs, e.g. [phonology, grammar]'
+		});
+		return [];
+	}
+
+	const out: Section[] = [];
+	const seen = new Set<string>();
+	for (const slug of raw as string[]) {
+		if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
+			issues.push({
+				kind: 'invalid-yaml',
+				entity: entityId,
+				detail: `section slug "${slug}" must be lowercase letters, digits and hyphens`
+			});
+			continue;
+		}
+		if (RESERVED_SECTION_SLUGS.has(slug)) {
+			issues.push({
+				kind: 'invalid-yaml',
+				entity: entityId,
+				detail: `section slug "${slug}" is reserved for a built-in sub-page`
+			});
+			continue;
+		}
+		if (seen.has(slug)) {
+			issues.push({ kind: 'invalid-yaml', entity: entityId, detail: `duplicate section "${slug}"` });
+			continue;
+		}
+		seen.add(slug);
+
+		// A child folder with the same name would shadow the section URL.
+		if (await exists(join(absDir, slug))) {
+			issues.push({
+				kind: 'invalid-yaml',
+				entity: entityId,
+				detail: `section "${slug}" collides with a child folder of the same name`
+			});
+			continue;
+		}
+
+		const mdPath = join(absDir, `${slug}.md`);
+		if (!(await exists(mdPath))) {
+			issues.push({ kind: 'missing-md', entity: entityId, detail: mdPath });
+			continue;
+		}
+		let text: string;
+		try {
+			text = await readFile(mdPath, 'utf8');
+		} catch (err) {
+			issues.push({
+				kind: 'invalid-yaml',
+				entity: entityId,
+				detail: `${mdPath}: ${err instanceof Error ? err.message : String(err)}`
+			});
+			continue;
+		}
+		out.push({
+			slug,
+			title: extractChapterTitle(text) ?? humaniseSlug(slug),
+			body: stripLeadingHeading(text),
+			mdPath
+		});
+	}
+	return out;
+}
+
+/** Coerce a YAML scalar to a trimmed string, or null when empty/absent. */
+function lexString(v: unknown): string | null {
+	if (typeof v === 'string') return v.trim() || null;
+	if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+	return null;
+}
+
+/**
+ * Read an entity's `lexicon.yaml` (or `.yml`): a list of word entries.
+ *
+ *     - {word: manyan, pos: verb, meaning: to love, class: 1}
+ *     - word: plang
+ *       meaning: city; hilltop
+ *
+ * Only `word` is required. Rows that aren't mappings, or have no word,
+ * are skipped with a health issue naming the row.
+ */
+export async function loadLexicon(
+	absDir: string,
+	entityId: EntityId,
+	issues: HealthIssue[]
+): Promise<LexiconRow[]> {
+	let path: string | null = null;
+	for (const name of ['lexicon.yaml', 'lexicon.yml']) {
+		if (await exists(join(absDir, name))) {
+			path = join(absDir, name);
+			break;
+		}
+	}
+	if (!path) return [];
+
+	let parsed: unknown;
+	try {
+		parsed = parseYaml(await readFile(path, 'utf8'));
+	} catch (err) {
+		issues.push({
+			kind: 'invalid-yaml',
+			entity: entityId,
+			detail: `${path}: ${err instanceof Error ? err.message : String(err)}`
+		});
+		return [];
+	}
+	if (parsed === null || parsed === undefined) return [];
+	if (!Array.isArray(parsed)) {
+		issues.push({
+			kind: 'invalid-yaml',
+			entity: entityId,
+			detail: `${path}: expected a list of entries`
+		});
+		return [];
+	}
+
+	const rows: LexiconRow[] = [];
+	parsed.forEach((item, i) => {
+		if (!item || typeof item !== 'object' || Array.isArray(item)) {
+			issues.push({
+				kind: 'invalid-yaml',
+				entity: entityId,
+				detail: `${path}: entry ${i + 1} is not a mapping`
+			});
+			return;
+		}
+		const v = item as Record<string, unknown>;
+		const word = lexString(v.word);
+		if (!word) {
+			issues.push({
+				kind: 'invalid-yaml',
+				entity: entityId,
+				detail: `${path}: entry ${i + 1} has no \`word\``
+			});
+			return;
+		}
+		const formsRaw = v.forms;
+		const forms = (Array.isArray(formsRaw) ? formsRaw : formsRaw === undefined ? [] : [formsRaw])
+			.map(lexString)
+			.filter((f): f is string => f !== null);
+		rows.push({
+			word,
+			meaning: lexString(v.meaning),
+			pos: lexString(v.pos),
+			notes: lexString(v.notes),
+			ipa: lexString(v.ipa)?.replace(/^\/|\/$/g, '') ?? null,
+			gloss: lexString(v.gloss),
+			forms,
+			cls: lexString(v.class ?? v.cls)
+		});
+	});
+	return rows;
 }
 
 /**

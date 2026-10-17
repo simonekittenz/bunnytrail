@@ -822,6 +822,8 @@ const KNOWN_ENTITY_META_FIELDS = new Set([
 	'class',
 	'book',
 	'vocabulary',
+	'sections',
+	'collation',
 	'statistics',
 	'profile'
 ]);

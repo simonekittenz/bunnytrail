@@ -6,6 +6,7 @@ import { makeCollectionResolver, renderEntityBody, renderSummary } from '#lib/se
 import { formatCalendarRange } from '#lib/calendar.js';
 import { titleCaseSlug, toRoman, relationLabel, type Entity, type RankDisplay, type VocabEntry } from '#lib/types.js';
 import type { ViewMode } from '#lib/cluster.js';
+import { buildSectionNav, folderBreadcrumbs } from './subpage';
 
 /**
  * Build the view-model for an entity page. Returned shape is consumed
@@ -69,19 +70,7 @@ export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor')
 	// `Places › Celestial › Aureth System` reads as "where in the
 	// field-journal you are", not "this is a planet which is a
 	// celestial body".
-	const breadcrumbs: { label: string; href: string }[] = [];
-	if (type) {
-		const segs = type.split('/');
-		for (let i = 1; i <= segs.length; i++) {
-			const prefix = segs.slice(0, i).join('/');
-			if (graph.isFolder(prefix)) {
-				breadcrumbs.push({
-					label: graph.folderLabels(prefix).plural,
-					href: `/${prefix}`
-				});
-			}
-		}
-	}
+	const breadcrumbs = folderBreadcrumbs(type);
 
 	// Kind chip data for the header. We always emit something when
 	// the entity has a kind, even an unregistered one — broken
@@ -639,6 +628,11 @@ export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor')
 		// link at the foot of the prose; absent when the entity has
 		// no `craft.md`.
 		craftHref: entity.craft !== null ? `/${entity.id}/craft` : null,
+		// Tab-style nav across the entity's sections and dictionary
+		// (empty when it has neither), and whether the dictionary page
+		// replaces the inline Vocabulary tab.
+		sectionNav: buildSectionNav(entity),
+		hasDictionaryPage: graph.hasDictionaryPage(entity.id),
 		rankNav,
 		classMates,
 		qualifierHolders,

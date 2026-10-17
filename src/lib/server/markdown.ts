@@ -1,5 +1,6 @@
 import { marked } from 'marked';
 import type { Entity, EntityId } from '#lib/types.js';
+import { getGlossTarget, renderGlossBlock, resolveGlossLanguage } from './gloss';
 
 /**
  * A function that resolves a wikilink path (as written in prose) to
@@ -464,6 +465,14 @@ export function renderBody(
 		if (token.lang === 'gallery') {
 			return renderGalleryBlock(token.text);
 		}
+		// A fence tagged with a registered language (its code or folder
+		// slug) is interlinear text: glossed word-by-word from that
+		// language's dictionary. Anything else falls through to <pre><code>.
+		const glossLangId = resolveGlossLanguage(token.lang, languageCodes);
+		if (glossLangId) {
+			const target = getGlossTarget(glossLangId);
+			if (target) return renderGlossBlock(target, token.text);
+		}
 		return defaultCode(token);
 	};
 
@@ -482,7 +491,28 @@ export function renderBody(
 	// Convert our sentinel title into a data attribute the UI can style.
 	const linkified = rescued.replace(/title="broken-link"/g, 'data-broken="true"');
 	const decorated = decorateEntityLinks(linkified, resolveLink, kindLookup);
-	return rewriteImageSrcs(decorated, imageBaseDir, imageBaseEndpoint);
+	return wrapTables(rewriteImageSrcs(decorated, imageBaseDir, imageBaseEndpoint));
+}
+
+/**
+ * Wrap every `<table>` in a scroll container and give it the `bt-table`
+ * class, so pipe tables and hand-written HTML tables (needed for merged
+ * `colspan`/`rowspan` headers, which pipe tables can't express) share one
+ * look and never blow out the page width on narrow screens.
+ *
+ * Runs on the final HTML. Tables inside code samples are already
+ * entity-escaped by then (`&lt;table`), so they are left alone.
+ */
+function wrapTables(html: string): string {
+	if (!html.includes('<table')) return html;
+	return html
+		.replace(/<table\b([^>]*)>/g, (_m, attrs: string) => {
+			const withClass = /\bclass\s*=/.test(attrs)
+				? attrs.replace(/\bclass\s*=\s*"([^"]*)"/, 'class="bt-table $1"')
+				: `${attrs} class="bt-table"`;
+			return `<div class="bt-table-wrap" tabindex="0"><table${withClass}>`;
+		})
+		.replace(/<\/table>/g, '</table></div>');
 }
 
 const HTML_CHROME_TAGS = ['dt', 'dd', 'figcaption', 'summary'] as const;

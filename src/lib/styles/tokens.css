@@ -96,6 +96,15 @@
 	--font-archaic: var(--font-serif);
 	--font-archaic-sc: var(--font-serif);
 
+	/* Constructed-language registers. `--font-conlang` sets words of an
+	   invented language wherever the engine renders them (interlinear
+	   glosses, the dictionary); it falls through to the body serif until
+	   a world picks a face with the diacritics it needs. `--font-ipa`
+	   leads with faces that carry the full IPA range and stacked tone
+	   marks, then falls back to the body serif. */
+	--font-conlang: var(--font-serif);
+	--font-ipa: 'Charis SIL', 'Gentium Plus', 'Doulos SIL', 'Noto Serif', 'Segoe UI', var(--font-serif);
+
 	--text-xs: 0.75rem;
 	--text-sm: 0.875rem;
 	--text-base: 1.0625rem;

@@ -7,6 +7,8 @@ import { loadAggregateShelfPage } from './aggregateShelfPage.load';
 import { loadAggregateSubShelfPage } from './aggregateSubShelfPage.load';
 import { loadChapterPage } from './chapterPage.load';
 import { loadCraftPage } from './craftPage.load';
+import { loadDictionaryPage } from './dictionaryPage.load';
+import { loadSectionPage } from './sectionPage.load';
 import { loadTimelinePage } from './timelinePage.load';
 import { loadTimelineDotPage } from './timelineDotPage.load';
 import { loadKindsIndexPage } from '../kinds/kindsIndexPage.load';
@@ -131,6 +133,24 @@ export async function load({ params, url }: { params: { path: string }; url: URL
 		}
 	}
 
+	// Sub-page dispatch: `<entity-id>/<slug>` for a declared section, or
+	// `<entity-id>/dictionary` for a language that has one. Entity ids
+	// resolved above, so a real child entity can never be shadowed (the
+	// loader rejects section slugs that collide with a child folder).
+	const subpageMatch = path.match(/^(.+)\/([a-z0-9][a-z0-9-]*)$/);
+	if (subpageMatch) {
+		const owner = graph.get(subpageMatch[1]!);
+		if (owner) {
+			if (subpageMatch[2] === 'dictionary' && graph.hasDictionaryPage(owner.id)) {
+				return { kind: 'dictionary' as const, ...(await loadDictionaryPage(owner)) };
+			}
+			const section = owner.sections.find((sec) => sec.slug === subpageMatch[2]);
+			if (section) {
+				return { kind: 'section' as const, ...(await loadSectionPage(owner, section)) };
+			}
+		}
+	}
+
 	if (graph.isFolder(path)) {
 		return await loadCollectionPage(path);
 	}
@@ -178,7 +198,7 @@ export type PathPageData = Awaited<ReturnType<typeof load>>;
  * SvelteKit's prerenderer knows which pages to generate.
  *
  * Covers: entity ids, browseable folder paths, chapter sub-pages,
- * craft sub-pages, cluster-scoped /kinds and /symbology, and
+ * craft sub-pages, section and dictionary sub-pages, cluster-scoped /kinds and /symbology, and
  * cross-cluster aggregate shelf / sub-shelf paths.
  */
 export async function entries(): Promise<{ path: string }[]> {
@@ -196,6 +216,13 @@ export async function entries(): Promise<{ path: string }[]> {
 		// Craft sub-page
 		if (entity.craft !== null) {
 			paths.add(`${entity.id}/craft`);
+		}
+		// Declared sections and the built-in dictionary
+		for (const section of entity.sections) {
+			paths.add(`${entity.id}/${section.slug}`);
+		}
+		if (graph.hasDictionaryPage(entity.id)) {
+			paths.add(`${entity.id}/dictionary`);
 		}
 	}
 

@@ -17,6 +17,8 @@ import { folderLabels, titleCaseSlug } from '#lib/types.js';
 import { CONTENT_DIR } from './globals';
 import { buildEdges, loadAll, resolveWikilink } from './loader';
 import { loadWorld } from './world';
+import { buildLexiconIndex, makeCollation, wordSlug, type LexiconIndex } from './lexicon';
+import { setGlossProvider, type GlossTarget } from './gloss';
 
 /**
  * A single result returned by `graph.searchForUI()`. Both entity and
@@ -159,6 +161,8 @@ export class Graph {
 	#worldSubGroupsIndex: Map<EntityId, WorldSubGroup[]> | null = null;
 	/** Lazily built on first call to `languageVocabulary()`. */
 	#vocabIndex: Map<EntityId, VocabEntry[]> | null = null;
+	/** Per-language lookup indices for interlinear glossing, built on demand. */
+	#lexIndexes = new Map<EntityId, LexiconIndex>();
 
 	/** Load (or reload) the entire graph from disk. */
 	async load(contentDir: string = CONTENT_DIR): Promise<void> {
@@ -192,6 +196,7 @@ export class Graph {
 		this.#speciesPopulationIndex = null;
 		this.#worldSubGroupsIndex = null;
 		this.#vocabIndex = null;
+		this.#lexIndexes.clear();
 		this.#version++;
 		for (const fn of this.#reloadListeners) fn();
 		})();
@@ -1545,6 +1550,29 @@ export class Graph {
 		};
 
 		for (const entity of this.#entities.values()) {
+			// The entity's own `lexicon.yaml` — a language's dictionary proper.
+			if (entity.meta.kind === 'language') {
+				for (const row of entity.lexicon) {
+					push(entity.id, {
+						word: row.word,
+						meaning: row.meaning,
+						pos: row.pos,
+						notes: row.notes,
+						ipa: row.ipa,
+						gloss: row.gloss,
+						forms: row.forms,
+						cls: row.cls,
+						id: '',
+						sortKey: '',
+						langCode: idToCode.get(entity.id) ?? null,
+						langHref: `/${entity.id}`,
+						sourceId: null,
+						sourceName: null,
+						sourceHref: null
+					});
+				}
+			}
+
 			const raw = entity.meta.vocabulary;
 			if (!Array.isArray(raw)) continue;
 
@@ -1573,6 +1601,12 @@ export class Graph {
 						meaning,
 						pos,
 						notes,
+						ipa: null,
+						gloss: null,
+						forms: [],
+						cls: null,
+						id: '',
+						sortKey: '',
 						langCode: idToCode.get(targetId) ?? null,
 						langHref: `/${targetId}`,
 						sourceId: null,
@@ -1590,6 +1624,12 @@ export class Graph {
 						meaning,
 						pos,
 						notes,
+						ipa: null,
+						gloss: null,
+						forms: [],
+						cls: null,
+						id: '',
+						sortKey: '',
 						langCode: idToCode.get(targetId) ?? langRef,
 						langHref: `/${targetId}`,
 						sourceId: entity.id,
@@ -1600,14 +1640,69 @@ export class Graph {
 			}
 		}
 
-		// Sort each language's list alphabetically by word.
-		for (const arr of index.values()) {
-			arr.sort((a, b) => a.word.localeCompare(b.word, undefined, { sensitivity: 'base' }));
+		// Sort each language's list in its own alphabet order, then give every
+		// entry a stable, unique anchor id (homographs get -2, -3, …).
+		for (const [langId, arr] of index) {
+			const order = this.#entities.get(langId)?.meta.collation;
+			const collation = makeCollation(
+				Array.isArray(order) && order.every((x) => typeof x === 'string') ? order : undefined
+			);
+			for (const e of arr) e.sortKey = collation.sortKey(e.word);
+			arr.sort((a, b) => collation.compare(a.word, b.word));
+			const seen = new Map<string, number>();
+			for (const e of arr) {
+				const base = wordSlug(e.word);
+				const n = (seen.get(base) ?? 0) + 1;
+				seen.set(base, n);
+				e.id = n === 1 ? base : `${base}-${n}`;
+			}
 		}
 
 		return index;
+	}
+
+	/**
+	 * Whether a language has its own dictionary page (`/<id>/dictionary`).
+	 * True for a `language` entity with words that either declares
+	 * `sections` or ships a `lexicon.yaml`; plain languages keep using the
+	 * Vocabulary tab on the entity page.
+	 */
+	hasDictionaryPage(id: EntityId): boolean {
+		const e = this.#entities.get(id);
+		if (!e || e.meta.kind !== 'language') return false;
+		if (e.sections.length === 0 && e.lexicon.length === 0) return false;
+		return this.languageVocabulary(id).length > 0;
+	}
+
+	/** Lookup index over a language's words, or null when it has none. */
+	lexiconIndex(langId: EntityId): LexiconIndex | null {
+		const cached = this.#lexIndexes.get(langId);
+		if (cached) return cached;
+		const words = this.languageVocabulary(langId);
+		if (words.length === 0) return null;
+		const idx = buildLexiconIndex(words);
+		this.#lexIndexes.set(langId, idx);
+		return idx;
+	}
+
+	/** Everything the interlinear renderer needs to know about a language. */
+	glossTarget(langId: EntityId): GlossTarget | null {
+		const e = this.#entities.get(langId);
+		if (!e || e.meta.kind !== 'language') return null;
+		return {
+			id: langId,
+			name: e.meta.name,
+			code: typeof e.meta.code === 'string' ? e.meta.code : null,
+			href: `/${langId}`,
+			dictionaryHref: this.hasDictionaryPage(langId) ? `/${langId}/dictionary` : null,
+			index: this.lexiconIndex(langId)
+		};
 	}
 }
 
 /** Singleton graph instance. */
 export const graph = new Graph();
+
+// Let the markdown renderer resolve language-tagged code fences against
+// the live graph without importing it (markdown.ts stays graph-agnostic).
+setGlossProvider((langId) => graph.glossTarget(langId));
