@@ -209,4 +209,22 @@ describe('sections and lexicon through loadAll', () => {
 		// Section files are not mistaken for child entities.
 		expect([...entities.keys()].sort()).toEqual(['languages/tongue', 'places/town']);
 	});
+
+	it('works for any kind of entity, not just languages', async () => {
+		const root = await tmp();
+		const dir = join(root, 'places', 'city');
+		await mkdir(dir, { recursive: true });
+		await writeFile(
+			join(dir, 'index.md'),
+			'---\nname: City\nkind: place\nsections: [history]\ntoc: always\n---\nHi.\n'
+		);
+		await writeFile(join(dir, 'history.md'), '# History\n\n## Founding\n\ntext\n');
+
+		const { entities, issues } = await loadAll(root);
+		const e = entities.get('places/city')!;
+
+		expect(e.meta.kind).toBe('place');
+		expect(e.sections.map((s) => s.slug)).toEqual(['history']);
+		expect(issues.filter((i) => i.kind === 'unknown-entity-field')).toEqual([]);
+	});
 });
