@@ -2,6 +2,7 @@ import { graph, byRankThenName } from '#lib/server/graph.js';
 import type { SpeciesPresenceEntry } from '#lib/server/graph.js';
 import { world } from '#lib/server/world.js';
 import { inlineSvgFigures } from '#lib/server/inlineSvgs.js';
+import { extractHeadings, parseTocSetting, resolveToc } from '#lib/server/toc.js';
 import { makeCollectionResolver, renderEntityBody, renderSummary } from '#lib/server/markdown.js';
 import { formatCalendarRange } from '#lib/calendar.js';
 import { titleCaseSlug, toRoman, relationLabel, type Entity, type RankDisplay, type VocabEntry } from '#lib/types.js';
@@ -631,6 +632,8 @@ export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor')
 		// Tab-style nav across the entity's sections and dictionary
 		// (empty when it has neither), and whether the dictionary page
 		// replaces the inline Vocabulary tab.
+		// "On this page" list for a long body — empty when it's short or `toc: never`.
+		toc: resolveToc(extractHeadings(html), parseTocSetting(entity.meta.toc), null),
 		sectionNav: buildSectionNav(entity),
 		hasDictionaryPage: graph.hasDictionaryPage(entity.id),
 		rankNav,

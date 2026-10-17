@@ -630,10 +630,11 @@ export interface EntityMeta {
 	 */
 	sections?: string[];
 	/**
-	 * Whether this entity's section pages show a table of contents.
-	 * `auto` (the default) shows one on pages with enough headings to
-	 * need it, `always` / `never` (or `true` / `false`) force it. A
-	 * section file can override this with its own `toc:` frontmatter.
+	 * Whether this entity's pages show a table of contents: its own page
+	 * and each of its section pages. `auto` (the default) shows one on
+	 * pages with enough headings to need it, `always` / `never` (or
+	 * `true` / `false`) force it. A section file can override this for
+	 * itself with its own `toc:` frontmatter.
 	 */
 	toc?: TocSetting | boolean;
 	/**

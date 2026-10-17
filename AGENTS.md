@@ -227,8 +227,10 @@ from the page. `auto` (default) shows it at ≥ 4 headings
 (`TOC_AUTO_MIN_HEADINGS`); `toc: always|never|true|false` on the entity,
 overridden by the section file's own `toc:`. `TableOfContents.svelte`
 renders it (a `<details>`, sticky column on wide screens, scroll-spy as
-a progressive enhancement). Only `SectionPage` uses it so far — craft
-and chapter pages could call the same two functions.
+a progressive enhancement). `SectionPage` puts it in a right-hand column;
+`EntityPage` puts it in the layout's otherwise-empty left column
+(`.toc-col`), computed from the entity body only. Craft and chapter pages
+could call the same two functions.
 
 **Lexicon** (`lexicon.yaml` → `Entity.lexicon` → the vocabulary index).
 `loadLexicon` normalises rows; `graph.#buildVocabIndex` merges them with

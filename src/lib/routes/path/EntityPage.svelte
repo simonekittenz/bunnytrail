@@ -11,6 +11,7 @@
 	import StatisticsPanel from '#lib/components/StatisticsPanel.svelte';
 	import VocabularyTable from '#lib/components/VocabularyTable.svelte';
 	import SectionNav from '#lib/components/SectionNav.svelte';
+	import TableOfContents from '#lib/components/TableOfContents.svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { relationLabel } from '#lib/types.js';
 	import { toRoman } from '#lib/types.js';
@@ -634,6 +635,13 @@
 	{:else}
 
 	<div class="layout">
+		{#if data.toc.length > 0}
+			<!-- The layout's left column is otherwise an empty mirror of the
+			     sidebar; a long body's contents list lives there. -->
+			<aside class="toc-col">
+				<TableOfContents items={data.toc} />
+			</aside>
+		{/if}
 		<div class="prose">
 			{@html data.html}
 
@@ -1128,6 +1136,23 @@
 		min-width: 0;
 	}
 
+	.toc-col {
+		grid-column: 1;
+		grid-row: 1 / span 99;
+		position: sticky;
+		top: var(--space-5);
+		max-height: calc(100vh - var(--space-7));
+		overflow-y: auto;
+		min-width: 0;
+	}
+
+	/* Jumping to a heading shouldn't butt it against the top of the window. */
+	.prose :global(h2),
+	.prose :global(h3),
+	.prose :global(h4) {
+		scroll-margin-top: var(--space-6);
+	}
+
 	.sidebar--top {
 		grid-column: 5;
 		grid-row: 1 / span 99;
@@ -1153,13 +1178,23 @@
 		}
 
 		.prose,
-		.sidebar--top {
+		.sidebar--top,
+		.toc-col {
 			grid-column: 1;
 			grid-row: auto;
 		}
 
 		.sidebar--top {
 			order: 1;
+		}
+
+		/* Narrow screens: the contents fold above the text instead. */
+		.toc-col {
+			order: -1;
+			position: static;
+			max-height: none;
+			padding-bottom: var(--space-4);
+			border-bottom: var(--rule-thin);
 		}
 
 		.prose {
