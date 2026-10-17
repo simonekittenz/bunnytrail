@@ -937,7 +937,7 @@
 
 	{#if hasVocabulary && effectiveTab === 'vocabulary'}
 		<div role="tabpanel" class="vocabulary-tab-panel">
-			<VocabularyTable entries={data.vocabulary} />
+			<VocabularyTable entries={data.vocabulary} listenTemplate={data.listen} />
 		</div>
 	{/if}
 

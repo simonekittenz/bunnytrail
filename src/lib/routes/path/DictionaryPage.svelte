@@ -24,7 +24,7 @@
 
 	<SectionNav items={data.nav} active="dictionary" />
 
-	<VocabularyTable entries={data.entries} />
+	<VocabularyTable entries={data.entries} listenTemplate={data.listen} />
 </article>
 
 <style>

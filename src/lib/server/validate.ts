@@ -824,6 +824,7 @@ const KNOWN_ENTITY_META_FIELDS = new Set([
 	'vocabulary',
 	'sections',
 	'transcribe',
+	'listen',
 	'toc',
 	'collation',
 	'statistics',

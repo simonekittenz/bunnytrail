@@ -264,6 +264,13 @@ Written pronunciations always win; `transcribe: false` on the entity
 opts out; unreadable words get nothing rather than a guess. Keep this
 free of `\p{…}` regexes (see the portability test).
 
+**Hear-it links** (`server/listen.ts`, pure). `listen:` on a language
+(`true` → ipa-reader.com, or an http(s) URL template containing `{ipa}`)
+makes `VocabularyTable` show a speaker icon beside each pronunciation,
+linking out in a new tab (`rel=noopener noreferrer`). The engine never
+calls the service itself, and the setting is off by default. Dictionary
+only: the gloss word cards sit inside an `<a>`, so they can't hold links.
+
 **Tables.** `wrapTables` in `markdown.ts` wraps every `<table>` (pipe or
 raw HTML) in `.bt-table-wrap` with class `bt-table`, so wide charts
 scroll sideways. Merged cells need raw HTML.

@@ -5,9 +5,15 @@
 
 	interface Props {
 		entries: VocabEntry[];
+		/** URL template with `{ipa}` for the "hear it" link; null hides the icon. */
+		listenTemplate?: string | null;
 	}
 
-	let { entries }: Props = $props();
+	let { entries, listenTemplate = null }: Props = $props();
+
+	function listenHref(ipa: string): string {
+		return (listenTemplate ?? '').replace('{ipa}', encodeURIComponent(ipa));
+	}
 
 	const ui = $derived(t(page.data.world.language));
 
@@ -153,7 +159,27 @@
 										class="ipa"
 										class:ipa--auto={entry.ipaAuto}
 										title={entry.ipaAuto ? ui.dictionary_ipa_auto : undefined}>/{entry.ipa}/</span
-									>{/if}
+									>{#if listenTemplate}
+										<a
+											class="listen"
+											href={listenHref(entry.ipa)}
+											target="_blank"
+											rel="noopener noreferrer"
+											title={ui.dictionary_listen}
+											aria-label={`${ui.dictionary_listen}: ${entry.word}`}
+										>
+											<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false">
+												<path fill="currentColor" d="M2 6v4h3l4 3V3L5 6H2z" />
+												<path
+													fill="none"
+													stroke="currentColor"
+													stroke-width="1.3"
+													stroke-linecap="round"
+													d="M11 5.5a3.5 3.5 0 0 1 0 5M12.8 3.7a6 6 0 0 1 0 8.6"
+												/>
+											</svg>
+										</a>
+									{/if}{/if}
 							</td>
 						{/if}
 						<td class="cell-pos">
@@ -339,6 +365,24 @@
 	.ipa {
 		font-family: var(--font-ipa);
 		color: var(--ink-soft);
+	}
+
+	/* The speaker icon that opens the pronunciation in an outside reader. */
+	.listen {
+		display: inline-flex;
+		margin-left: var(--space-2);
+		vertical-align: -0.1em;
+		color: var(--ink-faint);
+		border-radius: var(--radius-sm);
+	}
+
+	.listen:hover {
+		color: var(--accent);
+	}
+
+	.listen:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 
 	/* A pronunciation worked out from the spelling, not written down. */

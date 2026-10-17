@@ -637,6 +637,12 @@ export interface EntityMeta {
 	 */
 	transcribe?: boolean;
 	/**
+	 * Show a small speaker icon beside each dictionary pronunciation that
+	 * links out to a service reading IPA aloud. `true` uses ipa-reader.com;
+	 * a string is a URL template containing `{ipa}`. Off by default.
+	 */
+	listen?: boolean | string;
+	/**
 	 * Whether this entity's pages show a table of contents: its own page
 	 * and each of its section pages. `auto` (the default) shows one on
 	 * pages with enough headings to need it, `always` / `never` (or

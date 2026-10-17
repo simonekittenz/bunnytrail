@@ -3,6 +3,7 @@ import type { SpeciesPresenceEntry } from '#lib/server/graph.js';
 import { world } from '#lib/server/world.js';
 import { inlineSvgFigures } from '#lib/server/inlineSvgs.js';
 import { extractHeadings, parseTocSetting, resolveToc } from '#lib/server/toc.js';
+import { resolveListenTemplate } from '#lib/server/listen.js';
 import { makeCollectionResolver, renderEntityBody, renderSummary } from '#lib/server/markdown.js';
 import { formatCalendarRange } from '#lib/calendar.js';
 import { titleCaseSlug, toRoman, relationLabel, type Entity, type RankDisplay, type VocabEntry } from '#lib/types.js';
@@ -636,6 +637,7 @@ export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor')
 		toc: resolveToc(extractHeadings(html), parseTocSetting(entity.meta.toc), null),
 		sectionNav: buildSectionNav(entity),
 		hasDictionaryPage: graph.hasDictionaryPage(entity.id),
+		listen: resolveListenTemplate(entity.meta.listen),
 		rankNav,
 		classMates,
 		qualifierHolders,

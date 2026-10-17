@@ -1,4 +1,5 @@
 import { graph } from '#lib/server/graph.js';
+import { resolveListenTemplate } from '#lib/server/listen.js';
 import { renderSummary } from '#lib/server/markdown.js';
 import type { Entity } from '#lib/types.js';
 import { buildSectionNav, subpageBreadcrumbs } from './subpage';
@@ -27,7 +28,8 @@ export async function loadDictionaryPage(entity: Entity) {
 		},
 		breadcrumbs: subpageBreadcrumbs(entity),
 		nav: buildSectionNav(entity),
-		entries: graph.languageVocabulary(entity.id)
+		entries: graph.languageVocabulary(entity.id),
+		listen: resolveListenTemplate(entity.meta.listen)
 	};
 }
 
