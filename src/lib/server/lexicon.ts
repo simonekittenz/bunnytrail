@@ -71,7 +71,13 @@ export function normalizeWord(s: string): string {
  * matching and sorting ignore them.
  */
 export function stripMarks(s: string): string {
-	return s.normalize('NFD').replace(/\p{M}+/gu, '').normalize('NFC').replace(/['\u2019\u02BC]/g, '');
+	// U+0300–U+036F is the combining-diacritics block that holds tone marks. Spelled
+	// out because the offline iPad runtime can't parse Unicode property escapes.
+	return s
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]+/g, '')
+		.normalize('NFC')
+		.replace(/['\u2019\u02BC]/g, '');
 }
 
 /** Trim the affix hyphen off an entry word, returning the bare form. */

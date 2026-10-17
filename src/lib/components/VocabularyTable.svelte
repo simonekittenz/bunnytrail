@@ -25,7 +25,7 @@
 
 	/** Lowercase and drop tone marks, so "kunay" finds "kunǎy". */
 	function fold(s: string): string {
-		return s.normalize('NFD').replace(/\p{M}+/gu, '').toLowerCase();
+		return s.normalize('NFD').replace(/[\u0300-\u036f]+/g, '').toLowerCase();
 	}
 
 	/** Compare two nullable strings: non-null before null, then locale order. */
