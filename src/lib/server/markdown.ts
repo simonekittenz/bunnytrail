@@ -1,5 +1,6 @@
 import { marked } from 'marked';
 import type { Entity, EntityId } from '#lib/types.js';
+import { renderStructuredBlock } from './blocks';
 import { getGlossTarget, renderGlossBlock, resolveGlossLanguage } from './gloss';
 
 /**
@@ -465,6 +466,9 @@ export function renderBody(
 		if (token.lang === 'gallery') {
 			return renderGalleryBlock(token.text);
 		}
+		// `ipa-chart` and `paradigm` fences are YAML grids (see blocks.ts).
+		const structured = renderStructuredBlock(token.lang, token.text, { languageCodes });
+		if (structured !== null) return structured;
 		// A fence tagged with a registered language (its code or folder
 		// slug) is interlinear text: glossed word-by-word from that
 		// language's dictionary. Anything else falls through to <pre><code>.

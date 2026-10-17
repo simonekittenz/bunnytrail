@@ -740,6 +740,143 @@ blockquote {
 	letter-spacing: 0.02em;
 }
 
+/* ── Phoneme charts and paradigms ──────────────────────────────
+   Rendered from ```ipa-chart and ```paradigm fences (server/blocks.ts).
+   Both are ordinary tables, so they inherit `.bt-table` (scroll wrapper,
+   borders, header shading); these rules only add what a chart or a
+   paradigm needs on top. */
+.bt-table.bt-ipa,
+.bt-table.bt-paradigm {
+	font-variant-numeric: normal;
+}
+
+.bt-table.bt-ipa caption,
+.bt-table.bt-paradigm caption {
+	padding-bottom: var(--space-3);
+}
+
+.bt-table.bt-ipa thead th {
+	text-align: center;
+}
+
+.bt-table.bt-ipa tbody tr:nth-child(even) > td,
+.bt-table.bt-paradigm tbody tr:nth-child(even) > td {
+	background: transparent;
+}
+
+.bt-ipa td {
+	min-width: 3.5rem;
+	padding: var(--space-2) var(--space-2);
+	text-align: center;
+	vertical-align: middle;
+}
+
+/* A cell with no sound in the language: hatched, so the gaps in the
+   inventory are as visible as the sounds. */
+.bt-table.bt-ipa tbody tr td.bt-ipa__cell--empty {
+	background:
+		repeating-linear-gradient(
+			135deg,
+			transparent 0 5px,
+			var(--rule-hair) 5px 6px
+		),
+		var(--parchment-soft);
+}
+
+.bt-ipa__sym {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 0 var(--space-2);
+	border-radius: var(--radius-sm);
+	line-height: 1.2;
+	cursor: help;
+}
+
+.bt-ipa__sym:hover {
+	background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/* A second symbol in a cell sits behind a hairline, as on a printed chart. */
+.bt-ipa__sym--next {
+	border-left: 1px solid var(--rule);
+	border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.bt-ipa__ipa {
+	font-family: var(--font-ipa);
+	font-size: 1.4em;
+	color: var(--ink);
+}
+
+.bt-ipa__sp {
+	font-size: var(--text-xs);
+	color: var(--ink-faint);
+}
+
+.bt-ipa__sp::before {
+	content: '\27E8';
+}
+
+.bt-ipa__sp::after {
+	content: '\27E9';
+}
+
+.bt-paradigm__title {
+	display: block;
+	font-weight: 600;
+	font-style: normal;
+	color: var(--ink);
+}
+
+.bt-paradigm__note {
+	display: block;
+	font-size: var(--text-xs);
+	color: var(--ink-soft);
+}
+
+.bt-paradigm thead th {
+	text-align: center;
+}
+
+.bt-paradigm td {
+	text-align: center;
+}
+
+.bt-paradigm[data-conlang='true'] td {
+	font-family: var(--font-conlang);
+}
+
+/* A labelled block of rows, e.g. "Resultative". */
+.bt-table .bt-paradigm__group th {
+	background: var(--parchment-deep);
+	border-top: 1px solid var(--rule);
+	text-align: left;
+	font-variant-caps: all-small-caps;
+	letter-spacing: 0.08em;
+}
+
+/* The inflecting part of a form, marked with `stem|ending`. */
+.bt-paradigm__end {
+	font-weight: 700;
+	color: var(--accent-deep);
+}
+
+/* A structured block the author got wrong: loud on the page, not silent. */
+.bt-block-error {
+	margin: var(--space-5) 0;
+	padding: var(--space-3) var(--space-4);
+	border: 1px dashed var(--accent);
+	background: var(--paper-warm);
+	font-size: var(--text-sm);
+	color: var(--ink);
+}
+
+.bt-block-error strong {
+	margin-right: var(--space-2);
+	font-family: var(--font-mono);
+}
+
 /* ── Interlinear glosses ───────────────────────────────────────
    Rendered from ```<language> fences (see server/gloss.ts): each word
    stacked over its dictionary gloss, with a hover/focus card carrying
