@@ -136,6 +136,11 @@ export function planShims(mode: ShimMode): Shim[] {
 			file: 'api/search/+server.ts',
 			contents: server(mode, 'api/search')
 		},
+		// Dev-only SSE stream behind the layout's live-reload; 404s in production.
+		{
+			file: 'api/graph-reload/+server.ts',
+			contents: server(mode, 'api/graphReload')
+		},
 		{
 			file: 'api/auth/login/+server.ts',
 			contents: server(mode, 'auth', {}, 'POST')
