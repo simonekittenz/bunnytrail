@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { renderBody } from './markdown';
 import {
 	parseIpaChart,
+	parseOrthography,
 	parseParadigm,
 	renderIpaChart,
+	renderOrthography,
 	renderParadigm,
 	renderStructuredBlock
 } from './blocks';
@@ -209,6 +211,101 @@ describe('paradigm', () => {
 	});
 });
 
+const LETTERS = `
+language: bay
+columns: [Bajulan, IPA]
+groups:
+  - label: Consonants
+    letters: {b: b, y: j, n: n, x: ks}
+  - label: Vowels
+    letters: {a: a, uh: y}
+notesTitle: Pronunciation notes
+notes:
+  - Coda /r/ → [ɻ]
+  - au = /au̯/
+`;
+
+describe('orthography', () => {
+	const html = () => renderOrthography(parseOrthography(LETTERS, ctx));
+
+	it('lays the groups side by side under shared headings, padding the shorter one', () => {
+		const h = html();
+		expect(h).toContain('<th scope="colgroup" colspan="2">Consonants</th>');
+		expect(h).toContain('<th scope="colgroup" colspan="2">Vowels</th>');
+		expect(h.match(/<th scope="col"[^>]*>Bajulan<\/th>/g)).toHaveLength(2);
+		// 4 consonants set the depth: 4 body rows, and Vowels run out after 2.
+		expect(h.match(/<tr>/g)).toHaveLength(2 + 4);
+		// Vowels (2 letters) leave 2 of the 4 rows short; each pads a letter and a sound cell.
+		expect(h.match(/bt-orthography__none/g)).toHaveLength(2 * 2);
+	});
+
+	it('does not mistake the letters y and n for YAML booleans', () => {
+		const h = html();
+		expect(h).toContain(
+			'<td class="bt-orthography__letter">y</td><td class="bt-orthography__ipa">/j/</td>'
+		);
+		expect(h).toContain(
+			'<td class="bt-orthography__letter">n</td><td class="bt-orthography__ipa">/n/</td>'
+		);
+	});
+
+	it('puts bare sounds in slashes and leaves bracketed ones alone', () => {
+		const h = renderOrthography(
+			parseOrthography('groups:\n  - letters: {a: a, r: "[ɻ]", p: "/p/"}\n', ctx)
+		);
+		expect(h).toContain('/a/');
+		expect(h).toContain('>[ɻ]<');
+		expect(h).toContain('>/p/<');
+		expect(h).not.toContain('//p//');
+	});
+
+	it('renders the notes as a list in a box after the table', () => {
+		const h = html();
+		expect(h).toContain(
+			'<aside class="bt-orthography__notes"><strong>Pronunciation notes</strong>'
+		);
+		expect(h).toContain('<li>Coda /r/ → [ɻ]</li>');
+		expect(h.indexOf('</table>')).toBeLessThan(h.indexOf('<aside'));
+	});
+
+	it('tags the table with the language for the conlang font', () => {
+		expect(html()).toContain('lang="x-bay" data-conlang="true"');
+	});
+
+	it('needs no group labels, notes or language', () => {
+		const h = renderOrthography(parseOrthography('groups:\n  - letters: {a: a}\n', ctx));
+		expect(h).not.toContain('colgroup');
+		expect(h).not.toContain('<aside');
+		expect(h).toContain('<th scope="col">Spelling</th><th scope="col">Sound</th>');
+	});
+
+	it('names the problem: no groups, no letters, bad columns, unknown language', () => {
+		expect(() => parseOrthography('title: x\n', ctx)).toThrow(/groups/);
+		expect(() => parseOrthography('groups:\n  - letters: {}\n', ctx)).toThrow(/no letters/);
+		expect(() => parseOrthography('columns: [A]\ngroups:\n  - letters: {a: a}\n', ctx)).toThrow(
+			/exactly two/
+		);
+		expect(() => parseOrthography('language: nope\ngroups:\n  - letters: {a: a}\n', ctx)).toThrow(
+			/unknown language/
+		);
+	});
+
+	it('rejects a repeated letter within a group instead of silently dropping one', () => {
+		const h = renderStructuredBlock('orthography', 'groups:\n  - letters: {a: a, a: e}\n', ctx)!;
+		expect(h).toContain('bt-block-error');
+	});
+
+	it('escapes letters, sounds and notes', () => {
+		const h = renderOrthography(
+			parseOrthography('groups:\n  - letters: {"<b>": "&"}\nnotes: ["<i>"]\n', ctx)
+		);
+		expect(h).not.toContain('<b>');
+		expect(h).not.toContain('<i>');
+		expect(h).toContain('&lt;b&gt;');
+		expect(h).toContain('/&amp;/');
+	});
+});
+
 describe('renderStructuredBlock', () => {
 	it('ignores names that are not structured blocks', () => {
 		expect(renderStructuredBlock('js', 'x', ctx)).toBeNull();
@@ -237,6 +334,13 @@ describe('structured blocks in markdown', () => {
 		const html = render('```paradigm\ncolumns: [A]\nrows:\n  R: [one|two]\n```\n');
 		expect(html).toContain('class="bt-table bt-paradigm"');
 		expect(html).toContain('bt-paradigm__end');
+	});
+
+	it('renders a fenced orthography; only the table is wrapped, not the notes', () => {
+		const html = render('```orthography\ngroups:\n  - letters: {a: a}\nnotes: [hello]\n```\n');
+		expect(html).toContain('class="bt-table bt-orthography"');
+		expect(html.match(/bt-table-wrap/g)).toHaveLength(1);
+		expect(html.indexOf('</table></div>')).toBeLessThan(html.indexOf('<aside'));
 	});
 
 	it('does not disturb ordinary fences or glossed language fences', () => {

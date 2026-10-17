@@ -257,8 +257,8 @@ raw HTML) in `.bt-table-wrap` with class `bt-table`, so wide charts
 scroll sideways. Merged cells need raw HTML.
 
 **Structured blocks** (`server/blocks.ts`, pure; dispatched from
-`renderer.code` before the glossed-fence check). `ipa-chart` and
-`paradigm` fences take YAML and emit plain `<table>`s (which `wrapTables`
+`renderer.code` before the glossed-fence check). `ipa-chart`, `paradigm`
+and `orthography` fences take YAML and emit plain `<table>`s (which `wrapTables`
 then wraps — blocks must not add their own wrapper). Parse and render are
 separate, exported functions; failures throw `BlockError` and become a
 visible `.bt-block-error` box. Design rules worth keeping: voicing is
@@ -272,7 +272,7 @@ Theming hooks (override in a world's `theme.css`): `--font-conlang`
 (invented-language words), `--font-ipa` (pronunciation); classes
 `bt-gloss`, `bt-gloss__w--{found,approx,unknown,override}`,
 `bt-gloss__src`, `bt-gloss__g`, `bt-gloss__tip`, `bt-table`,
-`bt-ipa`, `bt-paradigm`, `bt-section-nav`. The authoring contract is in the consumer repo's
+`bt-ipa`, `bt-paradigm`, `bt-orthography`, `bt-section-nav`. The authoring contract is in the consumer repo's
 `STRUCTURE.md`.
 
 ## Wikilinks

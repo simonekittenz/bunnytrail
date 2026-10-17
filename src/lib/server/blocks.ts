@@ -6,6 +6,7 @@
  *
  *   ```ipa-chart      a phoneme chart — places × manners, or vowel space
  *   ```paradigm       an inflection table — forms × grammatical categories
+ *   ```orthography    spelling → sound correspondences, grouped, with notes
  *
  * Both emit an ordinary `<table>`; the markdown renderer's table pass
  * then wraps it for sideways scrolling like any other. A malformed block
@@ -334,9 +335,137 @@ export function renderParadigm(p: Paradigm): string {
 	return out.join('');
 }
 
+// ── orthography ──────────────────────────────────────────────────────
+
+interface OrthographyGroup {
+	label: string | null;
+	letters: Array<[string, string]>;
+}
+
+interface Orthography {
+	title: string | null;
+	/** Headings over the two columns of each group, e.g. `Bajulan` / `IPA`. */
+	headings: [string, string];
+	groups: OrthographyGroup[];
+	notesTitle: string | null;
+	notes: string[];
+	languageCode: string | null;
+}
+
+export function parseOrthography(text: string, ctx: BlockContext): Orthography {
+	const doc = parseDoc(text);
+
+	if (!Array.isArray(doc.groups) || doc.groups.length === 0)
+		fail('`groups` must be a non-empty list');
+	const groups = (doc.groups as unknown[]).map((g, i): OrthographyGroup => {
+		const rec = asRecord(g, `group ${i + 1}`);
+		const letters = asRecord(rec.letters, `group ${i + 1} \`letters\``);
+		if (Object.keys(letters).length === 0) fail(`group ${i + 1} has no letters`);
+		return {
+			label: asString(rec.label, `group ${i + 1} label`),
+			letters: Object.entries(letters).map(([letter, sound]): [string, string] => [
+				letter,
+				asString(sound, `sound for "${letter}"`) ?? ''
+			])
+		};
+	});
+
+	let headings: [string, string] = ['Spelling', 'Sound'];
+	if (doc.columns !== undefined) {
+		const cols = asStringList(doc.columns, '`columns`');
+		if (cols.length !== 2) fail('`columns` must name exactly two headings, e.g. [Bajulan, IPA]');
+		headings = [cols[0]!, cols[1]!];
+	}
+
+	let notes: string[] = [];
+	if (doc.notes !== undefined && doc.notes !== null) notes = asStringList(doc.notes, '`notes`');
+
+	let languageCode: string | null = null;
+	const langKey = asString(doc.language, '`language`');
+	if (langKey) {
+		const id = resolveGlossLanguage(langKey, ctx.languageCodes);
+		if (!id) fail(`unknown language "${langKey}"`);
+		for (const [code, langId] of ctx.languageCodes) {
+			if (langId === id) {
+				languageCode = code;
+				break;
+			}
+		}
+	}
+
+	return {
+		title: asString(doc.title, '`title`'),
+		headings,
+		groups,
+		notesTitle: asString(doc.notesTitle, '`notesTitle`'),
+		notes,
+		languageCode
+	};
+}
+
+/** A sound in slashes unless the author already bracketed it (`[ɻ]`, `/b/`). */
+function soundHtml(sound: string): string {
+	if (!sound) return '';
+	return /^[/[]/.test(sound) ? esc(sound) : `/${esc(sound)}/`;
+}
+
+export function renderOrthography(o: Orthography): string {
+	const depth = Math.max(...o.groups.map((g) => g.letters.length));
+	const lang = o.languageCode ? ` lang="x-${esc(o.languageCode)}" data-conlang="true"` : '';
+	const out: string[] = [`<table class="bt-orthography"${lang}>`];
+	if (o.title) out.push(`<caption>${esc(o.title)}</caption>`);
+
+	out.push('<thead>');
+	if (o.groups.some((g) => g.label)) {
+		out.push('<tr>');
+		for (const g of o.groups) {
+			out.push(`<th scope="colgroup" colspan="2">${esc(g.label ?? '')}</th>`);
+		}
+		out.push('</tr>');
+	}
+	out.push('<tr>');
+	o.groups.forEach((_, gi) => {
+		const sep = gi > 0 ? ' class="bt-orthography__sep"' : '';
+		out.push(
+			`<th scope="col"${sep}>${esc(o.headings[0])}</th><th scope="col">${esc(o.headings[1])}</th>`
+		);
+	});
+	out.push('</tr></thead><tbody>');
+
+	for (let row = 0; row < depth; row++) {
+		out.push('<tr>');
+		o.groups.forEach((g, gi) => {
+			const pair = g.letters[row];
+			const sep = gi > 0 ? ' bt-orthography__sep' : '';
+			if (!pair) {
+				out.push(
+					`<td class="bt-orthography__letter bt-orthography__none${sep}"></td><td class="bt-orthography__none"></td>`
+				);
+				return;
+			}
+			out.push(
+				`<td class="bt-orthography__letter${sep}">${esc(pair[0])}</td>` +
+					`<td class="bt-orthography__ipa">${soundHtml(pair[1])}</td>`
+			);
+		});
+		out.push('</tr>');
+	}
+	out.push('</tbody></table>');
+
+	if (o.notes.length) {
+		out.push(
+			'<aside class="bt-orthography__notes">' +
+				(o.notesTitle ? `<strong>${esc(o.notesTitle)}</strong>` : '') +
+				`<ul>${o.notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></aside>`
+		);
+	}
+	out.push('\n');
+	return out.join('');
+}
+
 // ── Entry point ──────────────────────────────────────────────────────
 
-export const STRUCTURED_BLOCKS = ['ipa-chart', 'paradigm'] as const;
+export const STRUCTURED_BLOCKS = ['ipa-chart', 'paradigm', 'orthography'] as const;
 
 /**
  * Render a fenced block by its info-string name, or `null` when the name
@@ -350,6 +479,7 @@ export function renderStructuredBlock(
 	try {
 		if (name === 'ipa-chart') return renderIpaChart(parseIpaChart(text));
 		if (name === 'paradigm') return renderParadigm(parseParadigm(text, ctx));
+		if (name === 'orthography') return renderOrthography(parseOrthography(text, ctx));
 		return null;
 	} catch (err) {
 		if (err instanceof BlockError) return errorBox(name ?? 'block', err.message);
