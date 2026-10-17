@@ -23,6 +23,7 @@ import type { CustomCalendarsConfig } from './world';
 import { calendarDateFromRaw, parseCalendarDate, toAbsoluteDay } from '#lib/calendar.js';
 import { splitFrontmatter } from './frontmatter';
 import { extractKindLinks, extractKindRefs, extractWikilinks } from './wikilinks';
+import { parseTocSetting } from './toc';
 
 export interface WalkArgs {
 	/** Absolute path to the folder being walked. */
@@ -444,10 +445,40 @@ export async function loadSections(
 			});
 			continue;
 		}
+		// Optional frontmatter: `title:` overrides the heading, `toc:` the
+		// entity-level table-of-contents setting.
+		const split = splitFrontmatter(text);
+		let fm: Record<string, unknown> = {};
+		if (split.frontmatter !== null) {
+			try {
+				const parsed = parseYaml(split.frontmatter);
+				if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+					fm = parsed as Record<string, unknown>;
+				}
+			} catch (err) {
+				issues.push({
+					kind: 'invalid-yaml',
+					entity: entityId,
+					detail: `${mdPath}: ${err instanceof Error ? err.message : String(err)}`
+				});
+			}
+		}
+		const tocRaw = fm.toc;
+		const toc = parseTocSetting(tocRaw);
+		if (tocRaw !== undefined && toc === null) {
+			issues.push({
+				kind: 'invalid-yaml',
+				entity: entityId,
+				detail: `${mdPath}: \`toc\` must be auto, always, never, true or false`
+			});
+		}
+		const bodyText = split.body;
+		const fmTitle = typeof fm.title === 'string' ? fm.title.trim() : '';
 		out.push({
 			slug,
-			title: extractChapterTitle(text) ?? humaniseSlug(slug),
-			body: stripLeadingHeading(text),
+			title: fmTitle || extractChapterTitle(bodyText) || humaniseSlug(slug),
+			body: stripLeadingHeading(bodyText),
+			toc,
 			mdPath
 		});
 	}

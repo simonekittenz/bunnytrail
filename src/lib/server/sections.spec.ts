@@ -43,6 +43,44 @@ describe('loadSections', () => {
 		expect(issues[0]).toMatchObject({ kind: 'missing-md', entity: 'tongue' });
 	});
 
+	it('reads optional frontmatter: title overrides the heading, toc is a per-page setting', async () => {
+		const dir = await tmp();
+		await writeFile(
+			join(dir, 'grammar.md'),
+			'---\ntitle: Grammar & Syntax\ntoc: never\n---\n# Ignored heading\n\nProse.\n'
+		);
+		await writeFile(join(dir, 'plain.md'), '# Plain\n\nNo frontmatter.\n');
+		const issues: HealthIssue[] = [];
+		const out = await loadSections(dir, 'tongue', meta(['grammar', 'plain']), issues);
+
+		expect(issues).toEqual([]);
+		expect(out[0]).toMatchObject({ title: 'Grammar & Syntax', toc: 'never' });
+		expect(out[0]!.body).toBe('Prose.\n'); // frontmatter and heading both gone
+		expect(out[1]).toMatchObject({ title: 'Plain', toc: null });
+	});
+
+	it('accepts true/false for toc and flags nonsense', async () => {
+		const dir = await tmp();
+		await writeFile(join(dir, 'a.md'), '---\ntoc: true\n---\n# A\n');
+		await writeFile(join(dir, 'b.md'), '---\ntoc: false\n---\n# B\n');
+		await writeFile(join(dir, 'c.md'), '---\ntoc: sometimes\n---\n# C\n');
+		const issues: HealthIssue[] = [];
+		const out = await loadSections(dir, 'tongue', meta(['a', 'b', 'c']), issues);
+		expect(out.map((s) => s.toc)).toEqual(['always', 'never', null]);
+		expect(issues).toHaveLength(1);
+		expect(issues[0]!.detail).toMatch(/`toc` must be/);
+	});
+
+	it('reports broken section frontmatter but still loads the page', async () => {
+		const dir = await tmp();
+		await writeFile(join(dir, 'a.md'), '---\ntitle: [unclosed\n---\n# A\n\nBody.\n');
+		const issues: HealthIssue[] = [];
+		const out = await loadSections(dir, 'tongue', meta(['a']), issues);
+		expect(out).toHaveLength(1);
+		expect(out[0]!.title).toBe('A');
+		expect(issues[0]!.kind).toBe('invalid-yaml');
+	});
+
 	it('rejects reserved, malformed and duplicate slugs', async () => {
 		const dir = await tmp();
 		for (const f of ['craft', 'dictionary', 'ok']) await writeFile(join(dir, `${f}.md`), '# X\n');
@@ -153,7 +191,7 @@ describe('sections and lexicon through loadAll', () => {
 		await mkdir(join(root, 'places', 'town'), { recursive: true });
 		await writeFile(
 			join(lang, 'index.md'),
-			'---\nname: Tongue\nkind: language\ncode: tg\nsections: [grammar]\ncollation: [a, ch, k]\n---\nMain prose.\n'
+			'---\nname: Tongue\nkind: language\ncode: tg\nsections: [grammar]\ntoc: auto\ncollation: [a, ch, k]\n---\nMain prose.\n'
 		);
 		await writeFile(join(lang, 'grammar.md'), '# Grammar\n\nSpoken in [[places/town]].\n');
 		await writeFile(join(lang, 'lexicon.yaml'), '- {word: ka, meaning: water}\n');

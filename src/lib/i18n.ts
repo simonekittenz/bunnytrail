@@ -77,6 +77,7 @@ export interface Translations {
 	section_overview: string;
 	section_dictionary: string;
 	section_nav_aria: string;
+	toc_title: string;
 	section_prev: string;
 	section_next: string;
 	dictionary_filter: string;
@@ -323,6 +324,7 @@ const en: Translations = {
 	section_overview: 'Overview',
 	section_dictionary: 'Dictionary',
 	section_nav_aria: 'Pages in this entry',
+	toc_title: 'On this page',
 	section_prev: 'Previous',
 	section_next: 'Next',
 	dictionary_filter: 'Filter words…',
@@ -570,6 +572,7 @@ const nl: Translations = {
 	section_overview: 'Overzicht',
 	section_dictionary: 'Woordenboek',
 	section_nav_aria: "Pagina's in dit onderdeel",
+	toc_title: 'Op deze pagina',
 	section_prev: 'Vorige',
 	section_next: 'Volgende',
 	dictionary_filter: 'Woorden filteren…',

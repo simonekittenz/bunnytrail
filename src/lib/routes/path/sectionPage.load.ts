@@ -1,6 +1,7 @@
 import { graph } from '#lib/server/graph.js';
 import { inlineSvgFigures } from '#lib/server/inlineSvgs.js';
 import { makeCollectionResolver, renderBody, renderSummary } from '#lib/server/markdown.js';
+import { extractHeadings, parseTocSetting, resolveToc } from '#lib/server/toc.js';
 import type { Entity, Section } from '#lib/types.js';
 import { buildSectionNav, subpageBreadcrumbs } from './subpage';
 
@@ -53,6 +54,8 @@ export async function loadSectionPage(entity: Entity, section: Section) {
 		nav,
 		prev: neighbour(at - 1),
 		next: neighbour(at + 1),
+		// Empty when the page is too short to need one (or it's switched off).
+		toc: resolveToc(extractHeadings(html), parseTocSetting(entity.meta.toc), section.toc),
 		html
 	};
 }

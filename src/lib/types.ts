@@ -630,6 +630,13 @@ export interface EntityMeta {
 	 */
 	sections?: string[];
 	/**
+	 * Whether this entity's section pages show a table of contents.
+	 * `auto` (the default) shows one on pages with enough headings to
+	 * need it, `always` / `never` (or `true` / `false`) force it. A
+	 * section file can override this with its own `toc:` frontmatter.
+	 */
+	toc?: TocSetting | boolean;
+	/**
 	 * Alphabet order for a `language` entity's dictionary, digraphs
 	 * allowed: `[a, b, ch, d, …]`. Words are split greedily into these
 	 * letters and sorted in this order, ignoring tone marks. Without it
@@ -763,12 +770,27 @@ export interface Entity {
 export interface Section {
 	/** File slug: `<slug>.md` next to the entity's `index.md`. */
 	slug: string;
-	/** Display title: first `# Heading`, else the humanised slug. */
+	/** Display title: `title:` frontmatter, else the first `# Heading`, else the humanised slug. */
 	title: string;
-	/** Markdown body with the leading `# Heading` removed. */
+	/** Markdown body with the frontmatter and leading `# Heading` removed. */
 	body: string;
+	/** Per-page `toc:` override from the file's optional frontmatter. */
+	toc: TocSetting | null;
 	/** Absolute path on disk (for diagnostics). */
 	mdPath: string;
+}
+
+/** When a long page shows its table of contents. */
+export type TocSetting = 'auto' | 'always' | 'never';
+
+/** One heading in a page's table of contents. */
+export interface TocItem {
+	/** Anchor id, as emitted on the rendered heading. */
+	id: string;
+	/** Plain-text heading. */
+	text: string;
+	/** 2 for a section heading, 3 for a subsection. */
+	level: 2 | 3;
 }
 
 /** One link in the tab-style nav across an entity's sub-pages. */
