@@ -18,6 +18,7 @@
  */
 import { parse as parseYaml } from 'yaml';
 import { resolveGlossLanguage } from './gloss';
+import { parsePronunciationRules } from './transcribe';
 
 export interface BlockContext {
 	/** Registered language codes → entity ids, as for glossed fences. */
@@ -354,6 +355,15 @@ interface Orthography {
 
 export function parseOrthography(text: string, ctx: BlockContext): Orthography {
 	const doc = parseDoc(text);
+
+	// `stress`, `clusters` and `syllables` drive generated dictionary
+	// pronunciations (see transcribe.ts); check them here so a typo shows
+	// up on the page the author is looking at.
+	try {
+		parsePronunciationRules(doc);
+	} catch (err) {
+		fail(err instanceof Error ? err.message : String(err));
+	}
 
 	if (!Array.isArray(doc.groups) || doc.groups.length === 0)
 		fail('`groups` must be a non-empty list');

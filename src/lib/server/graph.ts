@@ -19,6 +19,7 @@ import { buildEdges, loadAll, resolveWikilink } from './loader';
 import { loadWorld } from './world';
 import { buildLexiconIndex, makeCollation, wordSlug, type LexiconIndex } from './lexicon';
 import { setGlossProvider, type GlossTarget } from './gloss';
+import { fillPronunciations, findPronunciationRules, type PronunciationRules } from './transcribe';
 
 /**
  * A single result returned by `graph.searchForUI()`. Both entity and
@@ -1559,6 +1560,7 @@ export class Graph {
 						pos: row.pos,
 						notes: row.notes,
 						ipa: row.ipa,
+						ipaAuto: false,
 						gloss: row.gloss,
 						forms: row.forms,
 						cls: row.cls,
@@ -1602,6 +1604,7 @@ export class Graph {
 						pos,
 						notes,
 						ipa: null,
+						ipaAuto: false,
 						gloss: null,
 						forms: [],
 						cls: null,
@@ -1625,6 +1628,7 @@ export class Graph {
 						pos,
 						notes,
 						ipa: null,
+						ipaAuto: false,
 						gloss: null,
 						forms: [],
 						cls: null,
@@ -1649,6 +1653,9 @@ export class Graph {
 			);
 			for (const e of arr) e.sortKey = collation.sortKey(e.word);
 			arr.sort((a, b) => collation.compare(a.word, b.word));
+			// Words with no pronunciation written down get one from the spelling.
+			const rules = this.#pronunciationRules(langId);
+			if (rules) fillPronunciations(arr, rules);
 			const seen = new Map<string, number>();
 			for (const e of arr) {
 				const base = wordSlug(e.word);
@@ -1659,6 +1666,16 @@ export class Graph {
 		}
 
 		return index;
+	}
+
+	/**
+	 * Pronunciation rules for a language: the first `orthography` block in
+	 * its body or sections. `transcribe: false` turns this off.
+	 */
+	#pronunciationRules(langId: EntityId): PronunciationRules | null {
+		const e = this.#entities.get(langId);
+		if (!e || e.meta.transcribe === false) return null;
+		return findPronunciationRules([e.body, ...e.sections.map((sec) => sec.body)]);
 	}
 
 	/**

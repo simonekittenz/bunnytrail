@@ -252,6 +252,18 @@ card is a hover/focus popover), so it works prerendered and on the iPad
 bundle. Syntax: `=` free translation, `~` literal, `word{gloss}`
 override, blank line between phrases.
 
+**Generated pronunciations** (`server/transcribe.ts`, pure). A language's
+first `orthography` fence (entity body, then sections) is also its
+pronunciation rules: `findPronunciationRules` reads it, `transcribe`
+turns spellings into phonemic IPA (longest-match letters with tone marks
+carried through, `'` as hiatus, onset-maximising syllabification with the
+fence's `clusters`, `stress` rule), and `graph.#buildVocabIndex` calls
+`fillPronunciations` so every entry without a written `ipa` gets one
+(`VocabEntry.ipaAuto` marks them; the dictionary shows a hover note).
+Written pronunciations always win; `transcribe: false` on the entity
+opts out; unreadable words get nothing rather than a guess. Keep this
+free of `\p{…}` regexes (see the portability test).
+
 **Tables.** `wrapTables` in `markdown.ts` wraps every `<table>` (pipe or
 raw HTML) in `.bt-table-wrap` with class `bt-table`, so wide charts
 scroll sideways. Merged cells need raw HTML.

@@ -630,6 +630,13 @@ export interface EntityMeta {
 	 */
 	sections?: string[];
 	/**
+	 * Set `false` to stop generating dictionary pronunciations from this
+	 * language's `orthography` block. By default, a language whose pages
+	 * contain an `orthography` block gets an IPA for every word that
+	 * doesn't have one written down.
+	 */
+	transcribe?: boolean;
+	/**
 	 * Whether this entity's pages show a table of contents: its own page
 	 * and each of its section pages. `auto` (the default) shows one on
 	 * pages with enough headings to need it, `always` / `never` (or
@@ -1181,6 +1188,8 @@ export interface VocabEntry {
 	notes: string | null;
 	/** Pronunciation, without surrounding slashes. */
 	ipa: string | null;
+	/** True when `ipa` was generated from the spelling rather than written down. */
+	ipaAuto: boolean;
 	/** Short interlinear label; see `LexiconRow.gloss`. */
 	gloss: string | null;
 	/** Extra surface forms that resolve to this entry. */

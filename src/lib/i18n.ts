@@ -82,6 +82,7 @@ export interface Translations {
 	section_next: string;
 	dictionary_filter: string;
 	dictionary_no_match: string;
+	dictionary_ipa_auto: string;
 	dictionary_word_count: (n: number) => string;
 	entity_rank_nav_aria: string;
 	entity_rank_prev_aria: (name: string) => string;
@@ -329,6 +330,7 @@ const en: Translations = {
 	section_next: 'Next',
 	dictionary_filter: 'Filter words…',
 	dictionary_no_match: 'No words match.',
+	dictionary_ipa_auto: 'Generated from the spelling',
 	dictionary_word_count: (n) => (n === 1 ? '1 word' : `${n} words`),
 	entity_rank_nav_aria: 'Ranked navigation',
 	entity_rank_prev_aria: (name) => `Previous: ${name}`,
@@ -577,6 +579,7 @@ const nl: Translations = {
 	section_next: 'Volgende',
 	dictionary_filter: 'Woorden filteren…',
 	dictionary_no_match: 'Geen woorden gevonden.',
+	dictionary_ipa_auto: 'Gegenereerd uit de spelling',
 	dictionary_word_count: (n) => (n === 1 ? '1 woord' : `${n} woorden`),
 	entity_rank_nav_aria: 'Rangnavigatie',
 	entity_rank_prev_aria: (name) => `Vorige: ${name}`,

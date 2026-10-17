@@ -149,7 +149,11 @@
 						</td>
 						{#if showIpa}
 							<td class="cell-ipa">
-								{#if entry.ipa}<span class="ipa">/{entry.ipa}/</span>{/if}
+								{#if entry.ipa}<span
+										class="ipa"
+										class:ipa--auto={entry.ipaAuto}
+										title={entry.ipaAuto ? ui.dictionary_ipa_auto : undefined}>/{entry.ipa}/</span
+									>{/if}
 							</td>
 						{/if}
 						<td class="cell-pos">
@@ -335,6 +339,11 @@
 	.ipa {
 		font-family: var(--font-ipa);
 		color: var(--ink-soft);
+	}
+
+	/* A pronunciation worked out from the spelling, not written down. */
+	.ipa--auto {
+		cursor: help;
 	}
 
 	.cell-class {

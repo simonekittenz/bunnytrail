@@ -290,6 +290,18 @@ describe('orthography', () => {
 		);
 	});
 
+	it('accepts the pronunciation keys and reports a bad one on the page', () => {
+		const ok = 'stress: final\nclusters: [pt]\nsyllables: true\ngroups:\n  - letters: {a: a}\n';
+		expect(renderStructuredBlock('orthography', ok, ctx)).not.toContain('bt-block-error');
+		const bad = renderStructuredBlock(
+			'orthography',
+			'stress: sideways\ngroups:\n  - letters: {a: a}\n',
+			ctx
+		)!;
+		expect(bad).toContain('bt-block-error');
+		expect(bad).toContain('stress');
+	});
+
 	it('rejects a repeated letter within a group instead of silently dropping one', () => {
 		const h = renderStructuredBlock('orthography', 'groups:\n  - letters: {a: a, a: e}\n', ctx)!;
 		expect(h).toContain('bt-block-error');
