@@ -1,5 +1,5 @@
 import { graph } from '#lib/server/graph.js';
-import { resolveListenTemplate } from '#lib/server/listen.js';
+import { resolveListenTemplate } from '#lib/listen.js';
 import { renderSummary } from '#lib/server/markdown.js';
 import type { Entity } from '#lib/types.js';
 import { buildSectionNav, subpageBreadcrumbs } from './subpage';

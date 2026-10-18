@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { t } from '#lib/i18n.js';
+	import { listenHref } from '#lib/listen.js';
 	import type { VocabEntry } from '#lib/types.js';
 
 	interface Props {
@@ -10,10 +11,6 @@
 	}
 
 	let { entries, listenTemplate = null }: Props = $props();
-
-	function listenHref(ipa: string): string {
-		return (listenTemplate ?? '').replace('{ipa}', encodeURIComponent(ipa));
-	}
 
 	const ui = $derived(t(page.data.world.language));
 
@@ -162,7 +159,7 @@
 									>{#if listenTemplate}
 										<a
 											class="listen"
-											href={listenHref(entry.ipa)}
+											href={listenHref(listenTemplate, entry.ipa)}
 											target="_blank"
 											rel="noopener noreferrer"
 											title={ui.dictionary_listen}
