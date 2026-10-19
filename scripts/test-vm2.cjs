@@ -117,6 +117,26 @@ try {
 	}
 }
 
+// The server inside the sandbox listens on IPv4 (0.0.0.0:3000). Talk to it as
+// 127.0.0.1, never `localhost`: that resolves to IPv6 first, so another app
+// on the same port (a dev server, say) would silently answer instead and every
+// request would look like a failure of *this* build.
+const PORT = 3000;
+const BASE = `http://127.0.0.1:${PORT}`;
+const probe = require('child_process').spawnSync(process.execPath, [
+	'-e',
+	`const s=require('net').connect({host:'127.0.0.1',port:${PORT}});` +
+		`s.on('connect',()=>process.exit(1));s.on('error',()=>process.exit(0));` +
+		`setTimeout(()=>process.exit(0),1000)`
+]);
+if (probe.status === 1) {
+	console.error(
+		`[vm2-test] something is already listening on ${BASE} — stop it and run again,\n` +
+			'[vm2-test] otherwise its responses would be mistaken for this build\'s.'
+	);
+	process.exit(1);
+}
+
 console.log('[vm2-test] starting server inside vm2 sandbox (Proxy restored to match iPad)…');
 
 try {
@@ -141,7 +161,7 @@ setTimeout(async () => {
 
 	for (const test of tests) {
 		try {
-			const { status, body } = await get(`http://localhost:3000${test.path}`);
+			const { status, body } = await get(`${BASE}${test.path}`);
 			const bodyOk = body.toLowerCase().includes(test.expectBody);
 			if (status === test.expectStatus && bodyOk) {
 				console.log(`[vm2-test] GET ${test.path.padEnd(10)} → ${status}  ✓`);
