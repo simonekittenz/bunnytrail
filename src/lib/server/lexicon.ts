@@ -101,6 +101,12 @@ export interface Collation {
 	/** Fixed-width key: plain string comparison orders words correctly. */
 	sortKey(word: string): string;
 	compare(a: string, b: string): number;
+	/**
+	 * The alphabet letter a word files under — the first letter of its
+	 * collation split, so `chan` is `ch`, not `c`. Lowercase, as the alphabet
+	 * lists it; empty for a word with no letters at all.
+	 */
+	letter(word: string): string;
 }
 
 /**
@@ -120,7 +126,8 @@ export function makeCollation(order?: readonly string[]): Collation {
 		const lc = new Intl.Collator(undefined, { sensitivity: 'base' });
 		return {
 			sortKey: (w) => stripMarks(normalizeWord(w)),
-			compare: (a, b) => lc.compare(a, b) || normalizeWord(a).localeCompare(normalizeWord(b))
+			compare: (a, b) => lc.compare(a, b) || normalizeWord(a).localeCompare(normalizeWord(b)),
+			letter: (w) => [...stripMarks(normalizeWord(w)).replace(/^-+|-+$/g, '')][0] ?? ''
 		};
 	}
 
@@ -155,8 +162,19 @@ export function makeCollation(order?: readonly string[]): Collation {
 		return key;
 	};
 
+	const letter = (word: string): string => {
+		const chars = [...stripMarks(normalizeWord(word)).replace(/^-+|-+$/g, '')];
+		if (chars.length === 0) return '';
+		for (let len = Math.min(maxLen, chars.length); len >= 1; len--) {
+			const candidate = chars.slice(0, len).join('');
+			if (rank.has(candidate)) return candidate;
+		}
+		return chars[0]!;
+	};
+
 	return {
 		sortKey,
+		letter,
 		compare: (a, b) => {
 			const ka = sortKey(a);
 			const kb = sortKey(b);

@@ -1566,6 +1566,7 @@ export class Graph {
 						cls: row.cls,
 						id: '',
 						sortKey: '',
+						letter: '',
 						langCode: idToCode.get(entity.id) ?? null,
 						langHref: `/${entity.id}`,
 						sourceId: null,
@@ -1610,6 +1611,7 @@ export class Graph {
 						cls: null,
 						id: '',
 						sortKey: '',
+						letter: '',
 						langCode: idToCode.get(targetId) ?? null,
 						langHref: `/${targetId}`,
 						sourceId: null,
@@ -1634,6 +1636,7 @@ export class Graph {
 						cls: null,
 						id: '',
 						sortKey: '',
+						letter: '',
 						langCode: idToCode.get(targetId) ?? langRef,
 						langHref: `/${targetId}`,
 						sourceId: entity.id,
@@ -1651,7 +1654,10 @@ export class Graph {
 			const collation = makeCollation(
 				Array.isArray(order) && order.every((x) => typeof x === 'string') ? order : undefined
 			);
-			for (const e of arr) e.sortKey = collation.sortKey(e.word);
+			for (const e of arr) {
+				e.sortKey = collation.sortKey(e.word);
+				e.letter = collation.letter(e.word);
+			}
 			arr.sort((a, b) => collation.compare(a.word, b.word));
 			// Words with no pronunciation written down get one from the spelling.
 			const rules = this.#pronunciationRules(langId);

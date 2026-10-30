@@ -181,6 +181,26 @@ describe('collation', () => {
 		const plain = makeCollation();
 		expect(['b', 'á', 'a'].sort(plain.compare)).toEqual(['a', 'á', 'b']);
 	});
+
+	it('files a word under its first letter, digraphs included', () => {
+		expect(col.letter('chan')).toBe('ch');
+		expect(col.letter('ngu')).toBe('ng');
+		expect(col.letter('nab')).toBe('n');
+		expect(col.letter('shu')).toBe('sh');
+	});
+
+	it('ignores tone marks, affix hyphens and apostrophes when picking the letter', () => {
+		expect(col.letter('ǎnu')).toBe('a');
+		expect(col.letter('-ân')).toBe('a');
+		expect(col.letter("'ono")).toBe('o');
+		expect(col.letter('Chan')).toBe('ch');
+	});
+
+	it('uses the first character for a letter the alphabet does not list', () => {
+		expect(col.letter('zed')).toBe('z');
+		expect(col.letter('')).toBe('');
+		expect(makeCollation().letter('Ábel')).toBe('a');
+	});
 });
 
 describe('snippet parsing', () => {

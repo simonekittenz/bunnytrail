@@ -81,6 +81,13 @@ export interface Translations {
 	section_prev: string;
 	section_next: string;
 	dictionary_filter: string;
+	dictionary_filter_word: string;
+	dictionary_filter_meaning: string;
+	dictionary_scope_label: string;
+	dictionary_scope_all: string;
+	dictionary_scope_word: string;
+	dictionary_scope_meaning: string;
+	dictionary_letter_aria: string;
 	dictionary_no_match: string;
 	dictionary_ipa_auto: string;
 	dictionary_listen: string;
@@ -330,6 +337,13 @@ const en: Translations = {
 	section_prev: 'Previous',
 	section_next: 'Next',
 	dictionary_filter: 'Filter words…',
+	dictionary_filter_word: 'Filter by word…',
+	dictionary_filter_meaning: 'Filter by translation…',
+	dictionary_scope_label: 'Search in',
+	dictionary_scope_all: 'Both',
+	dictionary_scope_word: 'Word',
+	dictionary_scope_meaning: 'Translation',
+	dictionary_letter_aria: 'Current letter',
 	dictionary_no_match: 'No words match.',
 	dictionary_ipa_auto: 'Generated from the spelling',
 	dictionary_listen: 'Hear it (opens an outside site in a new tab)',
@@ -580,6 +594,13 @@ const nl: Translations = {
 	section_prev: 'Vorige',
 	section_next: 'Volgende',
 	dictionary_filter: 'Woorden filteren…',
+	dictionary_filter_word: 'Filteren op woord…',
+	dictionary_filter_meaning: 'Filteren op vertaling…',
+	dictionary_scope_label: 'Zoeken in',
+	dictionary_scope_all: 'Beide',
+	dictionary_scope_word: 'Woord',
+	dictionary_scope_meaning: 'Vertaling',
+	dictionary_letter_aria: 'Huidige letter',
 	dictionary_no_match: 'Geen woorden gevonden.',
 	dictionary_ipa_auto: 'Gegenereerd uit de spelling',
 	dictionary_listen: 'Beluister (opent een externe site in een nieuw tabblad)',

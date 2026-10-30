@@ -24,7 +24,11 @@
 
 	<SectionNav items={data.nav} active="dictionary" />
 
-	<VocabularyTable entries={data.entries} listenTemplate={data.listen} />
+	<VocabularyTable
+		entries={data.entries}
+		listenTemplate={data.listen}
+		languageName={data.entity.name}
+	/>
 </article>
 
 <style>

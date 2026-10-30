@@ -241,6 +241,17 @@ built-in `/<id>/dictionary` page (`graph.hasDictionaryPage`), which
 replaces its inline Vocabulary tab. `VocabEntry` carries `ipa`, `gloss`,
 `forms`, `cls`, `sortKey`.
 
+**Dictionary page UI.** `VocabularyTable.svelte` has a sticky bar (shown
+once a language has more than 12 words) with the filter box, a
+Both / <language> / Translation scope switch, and the alphabet letter the
+list has scrolled to. Which fields each scope searches lives in
+`src/lib/vocabSearch.ts` (pure, outside `server/` because the browser runs
+it): `word` = headword, forms, IPA; `meaning` = meaning, gloss, notes;
+`all` adds part of speech and class. `VocabEntry.letter` comes from
+`Collation.letter()`, so a digraph (`ch`) is one letter. The bar's classes
+are `vocab-`prefixed because `CollectionPage.css` ships global, unscoped
+`.toolbar` / `.filter` rules; don't reuse those names in scoped components.
+
 **Glossed fences.** A code fence whose info string is a registered
 language code or folder slug renders as interlinear text, not `<pre>`.
 Parsing, lookup and morphology (exact → tone/apostrophe-insensitive →

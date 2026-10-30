@@ -2,15 +2,18 @@
 	import { page } from '$app/state';
 	import { t } from '#lib/i18n.js';
 	import { listenHref } from '#lib/listen.js';
+	import { entryMatches, fold, SEARCH_SCOPES, type SearchScope } from '#lib/vocabSearch.js';
 	import type { VocabEntry } from '#lib/types.js';
 
 	interface Props {
 		entries: VocabEntry[];
 		/** URL template with `{ipa}` for the "hear it" link; null hides the icon. */
 		listenTemplate?: string | null;
+		/** The language's name, used to label the "search the word" option. */
+		languageName?: string | null;
 	}
 
-	let { entries, listenTemplate = null }: Props = $props();
+	let { entries, listenTemplate = null, languageName = null }: Props = $props();
 
 	const ui = $derived(t(page.data.world.language));
 
@@ -20,16 +23,26 @@
 	let sortCol = $state<SortCol>('word');
 	let sortDir = $state<SortDir>('asc');
 	let query = $state('');
+	let scope = $state<SearchScope>('all');
 
 	/** True when at least one entry has a non-null sourceId. */
 	const showSource = $derived(entries.some((e) => e.sourceId !== null));
 	const showIpa = $derived(entries.some((e) => e.ipa));
 	const showClass = $derived(entries.some((e) => e.cls));
 
-	/** Lowercase and drop tone marks, so "kunay" finds "kunǎy". */
-	function fold(s: string): string {
-		return s.normalize('NFD').replace(/[\u0300-\u036f]+/g, '').toLowerCase();
-	}
+	const scopeLabel = $derived<Record<SearchScope, string>>({
+		all: ui.dictionary_scope_all,
+		word: languageName || ui.dictionary_scope_word,
+		meaning: ui.dictionary_scope_meaning
+	});
+
+	const placeholder = $derived(
+		scope === 'word'
+			? ui.dictionary_filter_word
+			: scope === 'meaning'
+				? ui.dictionary_filter_meaning
+				: ui.dictionary_filter
+	);
 
 	/** Compare two nullable strings: non-null before null, then locale order. */
 	function cmp(a: string | null, b: string | null): number {
@@ -42,11 +55,7 @@
 	const visible = $derived.by(() => {
 		const q = fold(query.trim());
 		if (!q) return entries;
-		return entries.filter((e) =>
-			[e.word, ...e.forms, e.meaning, e.pos, e.notes, e.ipa, e.cls, e.gloss].some(
-				(field) => field && fold(field).includes(q)
-			)
-		);
+		return entries.filter((e) => entryMatches(e, q, scope));
 	});
 
 	const sorted = $derived.by(() => {
@@ -84,28 +93,102 @@
 		if (sortCol !== col) return '';
 		return sortDir === 'asc' ? '▲' : '▼';
 	}
+
+	// ── Current letter ──────────────────────────────────────────────
+	// While the list is in dictionary order, the sticky bar shows the
+	// letter of the first row still visible below it.
+	let bar = $state<HTMLElement>();
+	let body = $state<HTMLTableSectionElement>();
+	let currentLetter = $state('');
+	let frame = 0;
+
+	/** "ch" → "Ch": a digraph is one letter, capitalised like a name. */
+	function display(letter: string): string {
+		const [first = '', ...rest] = [...letter];
+		return first.toLocaleUpperCase() + rest.join('');
+	}
+
+	function updateLetter() {
+		frame = 0;
+		if (!bar || !body || sortCol !== 'word' || sorted.length === 0) {
+			currentLetter = '';
+			return;
+		}
+		const rows = body.rows;
+		const line = bar.getBoundingClientRect().bottom;
+		// First row more than half clear of the bar, so one that is mostly
+		// tucked underneath it doesn't name the letter.
+		const clear = (row: HTMLTableRowElement) => {
+			const r = row.getBoundingClientRect();
+			return r.top + r.height / 2 > line;
+		};
+		let lo = 0;
+		let hi = Math.min(rows.length, sorted.length) - 1;
+		while (lo < hi) {
+			const mid = (lo + hi) >> 1;
+			if (clear(rows[mid]!)) hi = mid;
+			else lo = mid + 1;
+		}
+		currentLetter = sorted[lo]?.letter ?? '';
+	}
+
+	function scheduleLetter() {
+		if (!frame) frame = requestAnimationFrame(updateLetter);
+	}
+
+	// Re-read after the list, its order or the layout changes.
+	$effect(() => {
+		void sorted;
+		void sortCol;
+		updateLetter();
+	});
 </script>
 
+<svelte:window onscroll={scheduleLetter} onresize={scheduleLetter} />
+
 <div class="vocab-wrap">
-	<div class="toolbar">
-		<p class="word-count">
+	<div class="vocab-bar" class:vocab-bar--searchable={wordCount > 12} bind:this={bar}>
+		{#if wordCount > 12}
+			<span
+				class="vocab-letter"
+				class:vocab-letter--empty={!currentLetter}
+				role="img"
+				aria-label={currentLetter ? `${ui.dictionary_letter_aria}: ${display(currentLetter)}` : undefined}
+				aria-hidden={currentLetter ? undefined : 'true'}>{currentLetter ? display(currentLetter) : ''}</span
+			>
+		{/if}
+		<p class="vocab-count">
 			{ui.dictionary_word_count(wordCount)}{#if query.trim() && visible.length !== wordCount}
 				· {visible.length}{/if}
 		</p>
 		{#if wordCount > 12}
 			<input
-				class="filter"
+				class="vocab-filter"
 				type="search"
 				bind:value={query}
-				placeholder={ui.dictionary_filter}
-				aria-label={ui.dictionary_filter}
+				{placeholder}
+				aria-label={placeholder}
 				autocomplete="off"
 				spellcheck="false"
 			/>
+			<div class="vocab-scope" role="radiogroup" aria-label={ui.dictionary_scope_label}>
+				{#each SEARCH_SCOPES as option (option)}
+					<button
+						type="button"
+						role="radio"
+						class="vocab-scope__opt"
+						class:active={scope === option}
+						aria-checked={scope === option}
+						onclick={() => (scope = option)}
+					>
+						{scopeLabel[option]}
+					</button>
+				{/each}
+			</div>
 		{/if}
 	</div>
 
-	<div class="table-scroll">
+	<div class="table-scroll bt-scroll-fade">
 		<table class="vocab-table">
 			<thead>
 				<tr>
@@ -144,7 +227,7 @@
 					{/if}
 				</tr>
 			</thead>
-			<tbody>
+			<tbody bind:this={body}>
 				{#each sorted as entry (entry.id + (entry.sourceId ?? ''))}
 					<tr id={entry.id ? `w-${entry.id}` : undefined}>
 						<td class="cell-word">
@@ -219,24 +302,58 @@
 		margin-block: var(--space-4);
 	}
 
-	.toolbar {
+	/* The bar is prefixed `vocab-` on purpose: CollectionPage.css ships global,
+	   unscoped `.toolbar` and `.filter` rules that would otherwise override
+	   these and push the search box off the page. */
+	.vocab-bar {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		justify-content: space-between;
-		gap: var(--space-3);
+		gap: var(--space-2) var(--space-4);
 		margin: 0 0 var(--space-4);
 	}
 
-	.word-count {
+	/* With a search box the bar stays put while the list scrolls under it. */
+	.vocab-bar--searchable {
+		position: sticky;
+		top: 0;
+		z-index: 5;
+		display: grid;
+		grid-template-columns: 2.5rem auto minmax(8rem, 1fr) auto;
+		grid-template-areas: 'letter count search scope';
+		align-items: center;
+		padding: var(--space-3) 0;
+		background: var(--page, var(--parchment));
+		border-bottom: 1px solid var(--rule-hair);
+	}
+
+	.vocab-count {
+		grid-area: count;
 		margin: 0;
 		font-size: var(--text-xs);
 		font-variant-caps: all-small-caps;
 		letter-spacing: 0.08em;
 		color: var(--ink-faint);
+		white-space: nowrap;
 	}
 
-	.filter {
+	/* The letter the list has scrolled to. */
+	.vocab-letter {
+		grid-area: letter;
+		font-family: var(--font-conlang, var(--font-display));
+		font-size: var(--text-xl);
+		line-height: 1;
+		text-align: center;
+		color: var(--accent-deep);
+	}
+
+	.vocab-letter--empty {
+		visibility: hidden;
+	}
+
+	.vocab-filter {
+		grid-area: search;
+		justify-self: end;
 		width: min(100%, 16rem);
 		padding: var(--space-2) var(--space-3);
 		font: inherit;
@@ -247,9 +364,72 @@
 		border-radius: var(--radius-sm);
 	}
 
-	.filter:focus-visible {
+	.vocab-filter:focus-visible {
 		outline: 2px solid var(--accent);
 		outline-offset: 1px;
+	}
+
+	/* "Search in: Both | Word | Translation" as a small segmented control. */
+	.vocab-scope {
+		grid-area: scope;
+		display: inline-flex;
+		border: 1px solid var(--rule);
+		border-radius: var(--radius-sm);
+		overflow: hidden;
+	}
+
+	.vocab-scope__opt {
+		all: unset;
+		box-sizing: border-box;
+		padding: var(--space-2) var(--space-3);
+		font-size: var(--text-xs);
+		font-variant-caps: all-small-caps;
+		letter-spacing: 0.08em;
+		font-weight: 600;
+		color: var(--ink-faint);
+		cursor: pointer;
+		transition:
+			color 150ms ease,
+			background-color 150ms ease;
+	}
+
+	.vocab-scope__opt + .vocab-scope__opt {
+		border-left: 1px solid var(--rule-hair);
+	}
+
+	.vocab-scope__opt:hover {
+		color: var(--accent-deep);
+	}
+
+	.vocab-scope__opt.active {
+		color: var(--ink);
+		background: var(--parchment-soft);
+	}
+
+	.vocab-scope__opt:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: -2px;
+	}
+
+	/* Narrow screens: letter and search share the first row, the count and
+	   scope switch sit under them, so the sticky bar stays short. */
+	@media (max-width: 40rem) {
+		.vocab-bar--searchable {
+			grid-template-columns: 2rem minmax(0, 1fr);
+			grid-template-areas:
+				'letter search'
+				'count scope';
+			gap: var(--space-2) var(--space-3);
+		}
+
+		.vocab-filter {
+			justify-self: stretch;
+			width: 100%;
+		}
+
+		.vocab-scope {
+			justify-self: end;
+		}
 	}
 
 	.plain-head {
@@ -348,7 +528,7 @@
 
 	/* Deep links from interlinear glosses land on `#w-<id>`. */
 	.vocab-table tbody tr {
-		scroll-margin-top: var(--space-6);
+		scroll-margin-top: 7rem;
 	}
 
 	.vocab-table tbody tr:target {

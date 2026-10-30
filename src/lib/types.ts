@@ -1206,6 +1206,8 @@ export interface VocabEntry {
 	id: string;
 	/** Fixed-width collation key: plain string order is dictionary order. */
 	sortKey: string;
+	/** The alphabet letter the word files under (a digraph counts as one letter), lowercase. */
+	letter: string;
 	/** Short language code (e.g. "bu"), for display as an inline pill. */
 	langCode: string | null;
 	/** URL to the language entity page, for the pill link. */
