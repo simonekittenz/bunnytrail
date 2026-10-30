@@ -20,6 +20,7 @@
 			hasGuides: boolean;
 			hasBlog: boolean;
 			hasSymbology: boolean;
+			hasLineage: boolean;
 			clusterOptions: { value: string; label: string; selected: boolean }[];
 			selectedCluster: string | null;
 		activeEra: string | null;
@@ -605,6 +606,17 @@
 							>{ui.nav_symbology}</a>
 						</li>
 					{/if}
+					{#if data.hasLineage}
+						<li>
+							<a
+								href="/lineage"
+								role="option"
+								aria-selected={!!navAriaCurrent('/lineage')}
+								class:selected={!!navAriaCurrent('/lineage')}
+								onclick={() => (metaOpen = false)}
+							>{ui.nav_lineage}</a>
+						</li>
+					{/if}
 						<li>
 							<a
 								href="/graph"
@@ -740,6 +752,9 @@
 				{/if}
 				{#if data.hasSymbology}
 					<a href="/symbology" aria-current={navAriaCurrent('/symbology')}>{ui.nav_symbology}</a>
+				{/if}
+				{#if data.hasLineage}
+					<a href="/lineage" aria-current={navAriaCurrent('/lineage')}>{ui.nav_lineage}</a>
 				{/if}
 				<a href="/graph" aria-current={navAriaCurrent('/graph')}>{ui.nav_graph}</a>
 				<a href="/relations" aria-current={navAriaCurrent('/relations')}>{ui.nav_relations}</a>

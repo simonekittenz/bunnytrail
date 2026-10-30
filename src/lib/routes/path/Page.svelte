@@ -6,6 +6,7 @@
 	import CraftPage from './CraftPage.svelte';
 	import SectionPage from './SectionPage.svelte';
 	import DictionaryPage from './DictionaryPage.svelte';
+	import LineagePage from './LineagePage.svelte';
 	import KindsIndexPage from '../kinds/KindsIndexPage.svelte';
 	import KindPage from '../kinds/kind/KindPage.svelte';
 	import SymbologyPage from '../symbology/Page.svelte';
@@ -35,6 +36,8 @@
 	<SectionPage {data} />
 {:else if data.kind === 'dictionary'}
 	<DictionaryPage {data} />
+{:else if data.kind === 'lineage'}
+	<LineagePage {data} />
 {:else if data.kind === 'kindsIndex'}
 	<KindsIndexPage {data} />
 {:else if data.kind === 'kindPage'}

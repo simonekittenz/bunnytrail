@@ -275,7 +275,10 @@ export function buildEdges(
 				kind: rel.kind,
 				note: rel.note,
 				order: rel.order,
-				qualifier: rel.qualifier
+				qualifier: rel.qualifier,
+				date: rel.date,
+				dateFrom: rel.from,
+				dateTo: rel.to
 			};
 			push(outIdx, entity.id, edge);
 			push(inIdx, rel.target, edge);

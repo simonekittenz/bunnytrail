@@ -167,6 +167,7 @@ export async function load({ url }: { url: URL }) {
 		kindsHref: selectedCluster ? `/${selectedCluster}/kinds` : '/kinds',
 		hasGuides: guides.all().length > 0,
 		hasBlog: blog.all().length > 0,
+		hasLineage: graph.lineage() !== null,
 		hasSymbology: graph.all().some((e) => typeof e.meta.sigil === 'string' && e.meta.sigil.trim() !== ''),
 		clusterOptions,
 		selectedCluster,

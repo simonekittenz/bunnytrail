@@ -56,6 +56,27 @@ describe('loadWorld', () => {
 		expect(r.ledeHtml).toContain('<strong>world</strong>');
 	});
 
+	it('reads the lineage binding and leaves it null when absent', async () => {
+		await writeFile(path, '---\nname: A\n---\n');
+		expect((await loadWorld(path)).config.lineage).toBeNull();
+
+		await writeFile(
+			path,
+			'---\nname: A\nlineage:\n  parent: [fam/father-of, fam/mother-of]\n  partner: fam/married-to\n---\n'
+		);
+		const r = await loadWorld(path);
+		expect(r.issues).toHaveLength(0);
+		expect(r.config.lineage?.parent.map((p) => p.relation)).toEqual(['fam/father-of', 'fam/mother-of']);
+		expect(r.config.lineage?.partner).toEqual(['fam/married-to']);
+	});
+
+	it('reports a lineage block without a parent binding', async () => {
+		await writeFile(path, '---\nname: A\nlineage:\n  partner: fam/married-to\n---\n');
+		const r = await loadWorld(path);
+		expect(r.config.lineage).toBeNull();
+		expect(r.issues.map((i) => i.detail).join('\n')).toMatch(/lineage\.parent is required/);
+	});
+
 	it('flags malformed yaml and falls back', async () => {
 		await writeFile(path, '---\nname: [bad\n---\n');
 		const r = await loadWorld(path);

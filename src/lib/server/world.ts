@@ -1,6 +1,7 @@
 import { readFile, stat } from 'node:fs/promises';
 import { parse as parseYaml } from 'yaml';
 import type { EraConfig, EraDef, ClusterEras, HealthIssue } from '#lib/types.js';
+import { parseLineageConfig, type LineageConfig } from '#lib/lineage.js';
 import { defaultWorldConfigPath } from './globals';
 import { splitFrontmatter } from './frontmatter';
 import { renderPlainBody, type LinkResolver } from './markdown';
@@ -289,6 +290,12 @@ export interface WorldConfig {
 	 * all date handling falls back to ISO-8601 via `dateFormat`.
 	 */
 	customCalendars: CustomCalendarsConfig | null;
+	/**
+	 * Binds the world's own relation ids to lineage roles (parent, partner,
+	 * birth, death), which switches on the lineage views. Null when absent
+	 * or unusable. See `src/lib/lineage.ts` for the authoring format.
+	 */
+	lineage: LineageConfig | null;
 }
 
 export interface HomePageSettings {
@@ -338,7 +345,8 @@ function fallbackConfig(): WorldConfig {
 		gatePrompt: 'Enter the secret to continue.',
 		homePageSettings: { showProseBreakdown: true, showImageCount: false },
 		dateFormat: null,
-		customCalendars: null
+		customCalendars: null,
+		lineage: null
 	};
 }
 
@@ -403,17 +411,26 @@ export async function loadWorld(
 	const homePageSettings = readHomePageSettings(meta, issues);
 	const dateFormat = typeof meta['dateFormat'] === 'string' ? meta['dateFormat'] : null;
 	const customCalendars = readCustomCalendars(meta, issues);
+	const lineage = readLineage(meta, issues);
 
 	const ledeBody = body.trim() === '' ? '' : body;
 	const ledeHtml = ledeBody ? renderPlainBody(ledeBody) : null;
 
 	return {
-		config: { name, shortName, heroTitle, tagline, allScopeLabel, ornament, allowUndefinedRelations, allowUndefinedProperties, disableScopePainting, eras, gatePrompt, language, homePageSettings, dateFormat, customCalendars },
+		config: { name, shortName, heroTitle, tagline, allScopeLabel, ornament, allowUndefinedRelations, allowUndefinedProperties, disableScopePainting, eras, gatePrompt, language, homePageSettings, dateFormat, customCalendars, lineage },
 		ledeHtml,
 		ledeBody,
 		present: true,
 		issues
 	};
+}
+
+function readLineage(meta: Record<string, unknown>, issues: HealthIssue[]): LineageConfig | null {
+	const { config, problems } = parseLineageConfig(meta['lineage']);
+	for (const problem of problems) {
+		issues.push({ kind: 'invalid-yaml', detail: `content_meta/world.md: ${problem}` });
+	}
+	return config;
 }
 
 const SUPPORTED_LANGUAGES = ['en', 'nl'] as const;

@@ -8,6 +8,7 @@ import { loadAggregateSubShelfPage } from './aggregateSubShelfPage.load';
 import { loadChapterPage } from './chapterPage.load';
 import { loadCraftPage } from './craftPage.load';
 import { loadDictionaryPage } from './dictionaryPage.load';
+import { loadLineagePage } from './lineagePage.load';
 import { loadSectionPage } from './sectionPage.load';
 import { loadTimelinePage } from './timelinePage.load';
 import { loadTimelineDotPage } from './timelineDotPage.load';
@@ -144,6 +145,9 @@ export async function load({ params, url }: { params: { path: string }; url: URL
 			if (subpageMatch[2] === 'dictionary' && graph.hasDictionaryPage(owner.id)) {
 				return { kind: 'dictionary' as const, ...(await loadDictionaryPage(owner)) };
 			}
+			if (subpageMatch[2] === 'lineage' && graph.hasLineagePage(owner.id)) {
+				return { kind: 'lineage' as const, ...(await loadLineagePage(owner)) };
+			}
 			const section = owner.sections.find((sec) => sec.slug === subpageMatch[2]);
 			if (section) {
 				return { kind: 'section' as const, ...(await loadSectionPage(owner, section)) };
@@ -198,7 +202,7 @@ export type PathPageData = Awaited<ReturnType<typeof load>>;
  * SvelteKit's prerenderer knows which pages to generate.
  *
  * Covers: entity ids, browseable folder paths, chapter sub-pages,
- * craft sub-pages, section and dictionary sub-pages, cluster-scoped /kinds and /symbology, and
+ * craft sub-pages, section, dictionary and lineage sub-pages, cluster-scoped /kinds and /symbology, and
  * cross-cluster aggregate shelf / sub-shelf paths.
  */
 export async function entries(): Promise<{ path: string }[]> {
@@ -223,6 +227,9 @@ export async function entries(): Promise<{ path: string }[]> {
 		}
 		if (graph.hasDictionaryPage(entity.id)) {
 			paths.add(`${entity.id}/dictionary`);
+		}
+		if (graph.hasLineagePage(entity.id)) {
+			paths.add(`${entity.id}/lineage`);
 		}
 	}
 

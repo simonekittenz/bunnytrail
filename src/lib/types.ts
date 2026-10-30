@@ -809,8 +809,8 @@ export interface TocItem {
 
 /** One link in the tab-style nav across an entity's sub-pages. */
 export interface SectionNavItem {
-	/** `overview` is the entity page itself; `dictionary` is the built-in word list. */
-	key: 'overview' | 'section' | 'dictionary';
+	/** `overview` is the entity page itself; `dictionary` is the built-in word list; `lineage` the ancestors/descendants hourglass. */
+	key: 'overview' | 'section' | 'dictionary' | 'lineage';
 	/** Section slug for `section` items, else the key. */
 	slug: string;
 	/** Display title for `section` items; the UI supplies the label for the others. */
@@ -874,6 +874,12 @@ export interface Edge {
 	order?: number;
 	/** See `Relation.qualifier`. */
 	qualifier?: EntityId;
+	/** See `Relation.date`. */
+	date?: string;
+	/** See `Relation.from` (named `dateFrom` because `from` is the source entity). */
+	dateFrom?: string;
+	/** See `Relation.to` (named `dateTo` because `to` is the target entity). */
+	dateTo?: string;
 }
 
 /** Health-check problems detected at load time. */

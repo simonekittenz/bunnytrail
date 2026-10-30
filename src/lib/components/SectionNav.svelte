@@ -5,7 +5,7 @@
 
 	interface Props {
 		items: SectionNavItem[];
-		/** Slug of the current page: `overview`, a section slug, or `dictionary`. */
+		/** Slug of the current page: `overview`, a section slug, `dictionary` or `lineage`. */
 		active: string;
 	}
 
@@ -16,6 +16,7 @@
 	function label(item: SectionNavItem): string {
 		if (item.key === 'overview') return ui.section_overview;
 		if (item.key === 'dictionary') return ui.section_dictionary;
+		if (item.key === 'lineage') return ui.lineage_title;
 		return item.title ?? item.slug;
 	}
 </script>

@@ -42,12 +42,14 @@ export function subpageBreadcrumbs(entity: Entity): Crumb[] {
 /**
  * The tab-style navigation shared by an entity and its sub-pages:
  * Overview, then each declared section in order, then the dictionary
- * when the language has one. Empty when the entity has no sub-pages, in
+ * when the language has one, then the lineage hourglass for people in the
+ * world's lineage. Empty when the entity has no sub-pages, in
  * which case nothing is rendered.
  */
 export function buildSectionNav(entity: Entity): SectionNavItem[] {
 	const hasDictionary = graph.hasDictionaryPage(entity.id);
-	if (entity.sections.length === 0 && !hasDictionary) return [];
+	const hasLineage = graph.hasLineagePage(entity.id);
+	if (entity.sections.length === 0 && !hasDictionary && !hasLineage) return [];
 	const items: SectionNavItem[] = [
 		{ key: 'overview', slug: 'overview', title: null, href: `/${entity.id}` }
 	];
@@ -61,6 +63,9 @@ export function buildSectionNav(entity: Entity): SectionNavItem[] {
 			title: null,
 			href: `/${entity.id}/dictionary`
 		});
+	}
+	if (hasLineage) {
+		items.push({ key: 'lineage', slug: 'lineage', title: null, href: `/${entity.id}/lineage` });
 	}
 	return items;
 }

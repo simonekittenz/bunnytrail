@@ -16,6 +16,12 @@ import type {
 import { folderLabels, titleCaseSlug } from '#lib/types.js';
 import { CONTENT_DIR } from './globals';
 import { buildEdges, loadAll, resolveWikilink } from './loader';
+import {
+	buildLineageIndex,
+	lineageRelationIds,
+	type LineageConfig,
+	type LineageIndex
+} from '#lib/lineage.js';
 import { loadWorld } from './world';
 import { buildLexiconIndex, makeCollation, wordSlug, type LexiconIndex } from './lexicon';
 import { setGlossProvider, type GlossTarget } from './gloss';
@@ -164,6 +170,10 @@ export class Graph {
 	#vocabIndex: Map<EntityId, VocabEntry[]> | null = null;
 	/** Per-language lookup indices for interlinear glossing, built on demand. */
 	#lexIndexes = new Map<EntityId, LexiconIndex>();
+	/** The world's `lineage:` binding, or null when it declares none. */
+	#lineageConfig: LineageConfig | null = null;
+	/** Lazily built on first call to `lineage()`. */
+	#lineageIndex: LineageIndex | null = null;
 
 	/** Load (or reload) the entire graph from disk. */
 	async load(contentDir: string = CONTENT_DIR): Promise<void> {
@@ -183,6 +193,12 @@ export class Graph {
 			this.#outEdges = edges.out;
 			this.#inEdges = edges.in;
 			this.#issues = [...worldIssues, ...issues];
+			this.#lineageConfig = worldConfig.lineage;
+			if (worldConfig.lineage) {
+				this.#issues.push(
+					...lineageConfigIssues(worldConfig.lineage, relations, properties, worldConfig.allowUndefinedRelations)
+				);
+			}
 			this.#kindRegistry = kindRegistry;
 			this.#ontologies = ontologies;
 			this.#relationRegistry = relations;
@@ -198,6 +214,7 @@ export class Graph {
 		this.#worldSubGroupsIndex = null;
 		this.#vocabIndex = null;
 		this.#lexIndexes.clear();
+		this.#lineageIndex = null;
 		this.#version++;
 		for (const fn of this.#reloadListeners) fn();
 		})();
@@ -278,6 +295,46 @@ export class Graph {
 	/** A single ontology by id, or undefined. */
 	ontology(id: string): Ontology | undefined {
 		return this.#ontologies.get(id);
+	}
+
+	/** The world's lineage binding, or null when lineage views are off. */
+	lineageConfig(): LineageConfig | null {
+		return this.#lineageConfig;
+	}
+
+	/**
+	 * Parent / partner / sibling index over the world's bound lineage
+	 * relations. Null when the world declares no `lineage:` block.
+	 */
+	lineage(): LineageIndex | null {
+		const config = this.#lineageConfig;
+		if (!config) return null;
+		if (!this.#lineageIndex) {
+			const order = config.parentOrder;
+			this.#lineageIndex = buildLineageIndex(this.#allEdges(), config, (id) => {
+				const meta = this.#entities.get(id)?.meta;
+				const raw = order ? (meta?.properties as Record<string, unknown> | undefined)?.[order.property] : undefined;
+				return {
+					rank: typeof meta?.rank === 'number' ? meta.rank : undefined,
+					orderValue: typeof raw === 'string' || typeof raw === 'number' ? String(raw) : undefined
+				};
+			});
+		}
+		return this.#lineageIndex;
+	}
+
+	/**
+	 * True when `/<id>/lineage` exists: the world binds lineage, the person
+	 * takes part in it, and a real child entity isn't already using the path.
+	 */
+	hasLineagePage(id: EntityId): boolean {
+		if (!this.#entities.has(id)) return false;
+		if (this.#entities.has(`${id}/lineage`)) return false;
+		return this.lineage()?.has(id) ?? false;
+	}
+
+	*#allEdges(): Generator<Edge> {
+		for (const list of this.#outEdges.values()) yield* list;
 	}
 
 	/** The world-level relation registry from world.md. Empty map when not configured. */
@@ -1729,3 +1786,31 @@ export const graph = new Graph();
 // Let the markdown renderer resolve language-tagged code fences against
 // the live graph without importing it (markdown.ts stays graph-agnostic).
 setGlossProvider((langId) => graph.glossTarget(langId));
+
+/** Health issues for a `lineage:` block that names relations or properties the world never declared. */
+function lineageConfigIssues(
+	config: LineageConfig,
+	relations: RelationRegistry,
+	properties: PropertyRegistry,
+	allowUndefinedRelations: boolean
+): HealthIssue[] {
+	const issues: HealthIssue[] = [];
+	if (!allowUndefinedRelations) {
+		for (const id of new Set(lineageRelationIds(config))) {
+			if (!relations.has(id)) {
+				issues.push({
+					kind: 'invalid-yaml',
+					detail: `content_meta/world.md: lineage binds '${id}', which no _ontology.yaml declares`
+				});
+			}
+		}
+	}
+	const order = config.parentOrder;
+	if (order && !properties.has(order.property)) {
+		issues.push({
+			kind: 'invalid-yaml',
+			detail: `content_meta/world.md: lineage.parentOrder.property '${order.property}' is not declared in any _kind.yaml`
+		});
+	}
+	return issues;
+}

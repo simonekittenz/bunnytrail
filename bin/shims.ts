@@ -216,6 +216,10 @@ export function planShims(mode: ShimMode): Shim[] {
 		{ file: 'graph/+page.server.ts', contents: pageServer(mode, 'graph') },
 		{ file: 'graph/+page.svelte', contents: pageSvelte(mode, 'graph') },
 
+		// Lineage overview (people to start from); per-person pages live under [...path]
+		{ file: 'lineage/+page.server.ts', contents: pageServer(mode, 'lineage') },
+		{ file: 'lineage/+page.svelte', contents: pageSvelte(mode, 'lineage') },
+
 		// Login gate
 		{ file: 'login/+page.server.ts', contents: pageServer(mode, 'login', { extraExports: ['prerender'] }) },
 		{ file: 'login/+page.svelte', contents: pageSvelte(mode, 'login') }

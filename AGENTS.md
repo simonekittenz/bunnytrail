@@ -309,6 +309,58 @@ Theming hooks (override in a world's `theme.css`): `--font-conlang`
 `bt-ipa`, `bt-paradigm`, `bt-orthography`, `bt-section-nav`. The authoring contract is in the consumer repo's
 `STRUCTURE.md`.
 
+## Lineage (family trees)
+
+The engine has no built-in family ontology. A world **binds its own
+relation ids to lineage roles** in `content_meta/world.md`, which turns
+on the lineage views. Nothing is renamed, so Dutch (`genealogie/vader-van`)
+and English (`cultural/parent-of`) worlds both work, and the engine makes
+**no gender assumptions**.
+
+```yaml
+lineage:
+  parent: [genealogie/vader-van, genealogie/moeder-van] # required
+  partner: genealogie/getrouwd-met # optional; undirected, from/to dates
+  birth: genealogie/geboren-te # optional; date on the relation, place = target
+  death: genealogie/overleden-te # optional
+  parentOrder: # optional; see below
+    property: gender
+    values: [male, female]
+```
+
+- `parent` entries are a relation id (source is the parent) or
+  `{ relation, direction: child-of }` for worlds that author the child
+  side. Relations are stored on one side only; the other side is derived.
+- `parentOrder` orders one person's parents (slot order in the tree) by a
+  property on the parent. Without it, parents sort by the order of the
+  `parent` list, then birth. Missing or unlisted values sort last.
+- Without a `lineage:` block, no lineage UI appears and nothing else changes.
+  Unknown relation ids / properties become health issues.
+
+**Code.** `src/lib/lineage.ts` is pure and client-safe: config parsing,
+`buildLineageIndex` (parents / children / partners / siblings / birth /
+death over a DAG; two parents, remarriage and half-siblings are normal,
+cycles in bad data are cut), `ancestorTree`, `descendantTree`.
+`graph.lineage()` builds the index lazily from the graph's edges;
+`graph.hasLineagePage(id)` gates the page. `server/lineageView.ts` builds
+the per-person view model. `Edge` carries `date` / `dateFrom` / `dateTo`.
+
+**Pages.** `/<id>/lineage` (`routes/path/lineagePage.load.ts` +
+`LineagePage.svelte`, a tab in `SectionNav`) is one diagram: ancestors
+above on a bar, the person sharing a row with their siblings (half-siblings
+dashed, `siblingRowOf`), and their partners and descendants hanging below.
+Parent rows are bottom-aligned so every parent meets its bar. Trees are sent to
+max depth (`LINEAGE_MAX_UP/DOWN`) and trimmed client-side, so the depth
+control (`?up=&down=`) works on prerendered builds. `/lineage`
+(`routes/lineage/`) lists the earliest known ancestors and a filterable
+index. `lineage` is a reserved section slug. Chrome strings are `lineage_*`
+in `i18n.ts`; CSS hook classes are `bt-lineage-person[--current]`.
+
+**Dates.** Relation dates may be `YYYY-MM-DD`, `YYYY-MM` or `YYYY` (a bare
+YAML integer is a year); `dates.ts` parses, sorts and formats them without
+inventing missing parts. Lineage sorts by birth date, falling back to
+`rank` read as a year.
+
 ## Wikilinks
 
 The wikilink resolver lives in `src/lib/server/markdown.ts`. The

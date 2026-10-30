@@ -24,6 +24,7 @@ export interface Translations {
 	nav_symbology: string;
 	nav_graph: string;
 	nav_relations: string;
+	nav_lineage: string;
 	nav_search_aria: string;
 	nav_menu_open_aria: string;
 	nav_menu_close_aria: string;
@@ -92,6 +93,28 @@ export interface Translations {
 	dictionary_ipa_auto: string;
 	dictionary_listen: string;
 	dictionary_word_count: (n: number) => string;
+
+	// ── Lineage ────────────────────────────────────────────────────────
+	lineage_title: string;
+	lineage_link: string;
+	lineage_aria: (name: string) => string;
+	lineage_depth_aria: string;
+	lineage_depth_up: string;
+	lineage_depth_down: string;
+	lineage_partnership: string;
+	lineage_half_sibling: string;
+	lineage_more_up: string;
+	lineage_more_down: string;
+	lineage_born: (date: string) => string;
+	lineage_died: (date: string) => string;
+	lineage_count_ancestors: (n: number) => string;
+	lineage_count_descendants: (n: number) => string;
+	lineage_overview_lede: string;
+	lineage_roots_heading: string;
+	lineage_everyone_heading: string;
+	lineage_filter: string;
+	lineage_no_match: string;
+	lineage_people_count: (n: number) => string;
 	entity_rank_nav_aria: string;
 	entity_rank_prev_aria: (name: string) => string;
 	entity_rank_prev_label: string;
@@ -280,6 +303,7 @@ const en: Translations = {
 	nav_symbology: 'Symbology',
 	nav_graph: 'Graph',
 	nav_relations: 'Relations',
+	nav_lineage: 'Lineage',
 	nav_search_aria: 'Search',
 	nav_menu_open_aria: 'Open menu',
 	nav_menu_close_aria: 'Close menu',
@@ -348,6 +372,28 @@ const en: Translations = {
 	dictionary_ipa_auto: 'Generated from the spelling',
 	dictionary_listen: 'Hear it (opens an outside site in a new tab)',
 	dictionary_word_count: (n) => (n === 1 ? '1 word' : `${n} words`),
+
+	// ── Lineage ────────────────────────────────────────────────────────
+	lineage_title: 'Lineage',
+	lineage_link: 'Lineage →',
+	lineage_aria: (name) => `Lineage of ${name}`,
+	lineage_depth_aria: 'Generations shown',
+	lineage_depth_up: 'Generations up',
+	lineage_depth_down: 'Generations down',
+	lineage_partnership: 'Partnership',
+	lineage_half_sibling: 'Half-sibling',
+	lineage_more_up: 'Earlier generations not shown',
+	lineage_more_down: 'Later generations not shown',
+	lineage_born: (date) => `Born ${date}`,
+	lineage_died: (date) => `Died ${date}`,
+	lineage_count_ancestors: (n) => (n === 1 ? '1 ancestor' : `${n} ancestors`),
+	lineage_count_descendants: (n) => (n === 1 ? '1 descendant' : `${n} descendants`),
+	lineage_overview_lede: 'Choose a person to see their ancestors and descendants as an hourglass.',
+	lineage_roots_heading: 'Earliest known ancestors',
+	lineage_everyone_heading: 'Everyone',
+	lineage_filter: 'Filter people…',
+	lineage_no_match: 'No people match.',
+	lineage_people_count: (n) => (n === 1 ? '1 person' : `${n} people`),
 	entity_rank_nav_aria: 'Ranked navigation',
 	entity_rank_prev_aria: (name) => `Previous: ${name}`,
 	entity_rank_prev_label: 'back',
@@ -537,6 +583,7 @@ const nl: Translations = {
 	nav_symbology: 'Symbologie',
 	nav_graph: 'Grafische weergave',
 	nav_relations: 'Relaties',
+	nav_lineage: 'Stamboom',
 	nav_search_aria: 'Zoeken',
 	nav_menu_open_aria: 'Menu openen',
 	nav_menu_close_aria: 'Menu sluiten',
@@ -605,6 +652,28 @@ const nl: Translations = {
 	dictionary_ipa_auto: 'Gegenereerd uit de spelling',
 	dictionary_listen: 'Beluister (opent een externe site in een nieuw tabblad)',
 	dictionary_word_count: (n) => (n === 1 ? '1 woord' : `${n} woorden`),
+
+	// ── Lineage ────────────────────────────────────────────────────────
+	lineage_title: 'Stamboom',
+	lineage_link: 'Stamboom →',
+	lineage_aria: (name) => `Stamboom van ${name}`,
+	lineage_depth_aria: 'Getoonde generaties',
+	lineage_depth_up: 'Generaties omhoog',
+	lineage_depth_down: 'Generaties omlaag',
+	lineage_partnership: 'Relatie',
+	lineage_half_sibling: 'Halfbroer of halfzus',
+	lineage_more_up: 'Eerdere generaties niet getoond',
+	lineage_more_down: 'Latere generaties niet getoond',
+	lineage_born: (date) => `Geboren ${date}`,
+	lineage_died: (date) => `Overleden ${date}`,
+	lineage_count_ancestors: (n) => (n === 1 ? '1 voorouder' : `${n} voorouders`),
+	lineage_count_descendants: (n) => (n === 1 ? '1 nakomeling' : `${n} nakomelingen`),
+	lineage_overview_lede: 'Kies een persoon om de voorouders en nakomelingen als zandloper te zien.',
+	lineage_roots_heading: 'Oudst bekende voorouders',
+	lineage_everyone_heading: 'Iedereen',
+	lineage_filter: 'Personen filteren…',
+	lineage_no_match: 'Geen personen gevonden.',
+	lineage_people_count: (n) => (n === 1 ? '1 persoon' : `${n} personen`),
 	entity_rank_nav_aria: 'Rangnavigatie',
 	entity_rank_prev_aria: (name) => `Vorige: ${name}`,
 	entity_rank_prev_label: 'vorige',
