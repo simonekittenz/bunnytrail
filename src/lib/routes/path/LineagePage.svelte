@@ -4,7 +4,12 @@
 	import { page } from '$app/state';
 	import { dateYear } from '#lib/dates.js';
 	import { t } from '#lib/i18n.js';
-	import type { AncestorNode, DescendantNode, DescendantUnion } from '#lib/lineage.js';
+	import type {
+		AncestorNode,
+		DescendantNode,
+		DescendantUnion,
+		SiblingRowMember
+	} from '#lib/lineage.js';
 	import LineagePersonChip from '#lib/components/LineagePersonChip.svelte';
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SectionNav from '#lib/components/SectionNav.svelte';
@@ -64,6 +69,28 @@
 		return `${from ?? ''}${to !== null ? `–${to}` : ''}`;
 	}
 
+	type FamilyItem =
+		| { type: 'focus' }
+		| { type: 'person'; member: SiblingRowMember }
+		| { type: 'group'; members: SiblingRowMember[] };
+
+	// Siblings beyond this many on one side of the focus person collapse into
+	// a single stack, so a big family doesn't make the diagram very wide.
+	const STACK_MIN = 3;
+
+	const familyItems = $derived.by((): FamilyItem[] => {
+		const at = data.family.findIndex((m) => m.id === data.entity.id);
+		const side = (members: SiblingRowMember[]): FamilyItem[] =>
+			members.length >= STACK_MIN
+				? [{ type: 'group', members }]
+				: members.map((member) => ({ type: 'person', member }));
+		return [
+			...side(data.family.slice(0, Math.max(at, 0))),
+			{ type: 'focus' },
+			...side(data.family.slice(at + 1))
+		];
+	});
+
 	function hasMoreDown(node: DescendantNode): boolean {
 		return node.truncated || node.unions.some((u) => u.children.length > 0);
 	}
@@ -90,15 +117,31 @@
 		{/if}
 		{#if level === 0}
 			<ul class="children">
-				{#each data.family as member (member.id)}
-					{#if member.id === data.entity.id}
+				{#each familyItems as item, i (i)}
+					{#if item.type === 'focus'}
 						{@render descendantNode(data.descendants, 0)}
-					{:else if data.people[member.id]}
+					{:else if item.type === 'group'}
+						<li class="node">
+							<ul class="stack">
+								{#each item.members as member (member.id)}
+									{#if data.people[member.id]}
+										<li>
+											<LineagePersonChip
+												person={data.people[member.id]!}
+												half={member.half}
+												compact
+											/>
+										</li>
+									{/if}
+								{/each}
+							</ul>
+						</li>
+					{:else if data.people[item.member.id]}
 						<li class="node">
 							<LineagePersonChip
-								person={data.people[member.id]!}
+								person={data.people[item.member.id]!}
 								showPlace={false}
-								half={member.half}
+								half={item.member.half}
 							/>
 						</li>
 					{/if}
@@ -340,6 +383,17 @@
 
 	.more--down {
 		margin-top: var(--space-1);
+	}
+
+	/* A collapsed group of siblings: one stack hanging from the bar. */
+	.stack {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-1);
+	}
+
+	.stack > li {
+		display: grid;
 	}
 
 	/* Ancestors: each row of parents sits above the person it belongs to,

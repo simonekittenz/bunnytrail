@@ -13,9 +13,18 @@
 		showPlace?: boolean;
 		/** A half-sibling of the focus person: dashed outline. */
 		half?: boolean;
+		/** One line (name and years) for dense groups; implies no place. */
+		compact?: boolean;
 	}
 
-	let { person, current = false, href, showPlace = true, half = false }: Props = $props();
+	let {
+		person,
+		current = false,
+		href,
+		showPlace = true,
+		half = false,
+		compact = false
+	}: Props = $props();
 
 	const ui = $derived(t(page.data.world.language));
 
@@ -39,7 +48,11 @@
 <div
 	class={[
 		'bt-lineage-person',
-		{ 'bt-lineage-person--current': current, 'bt-lineage-person--half': half }
+		{
+			'bt-lineage-person--current': current,
+			'bt-lineage-person--half': half,
+			'bt-lineage-person--compact': compact
+		}
 	]}
 	title={tooltip}
 >
@@ -53,7 +66,7 @@
 	{#if person.life}
 		<span class="life">{person.life}</span>
 	{/if}
-	{#if showPlace && person.birthPlace}
+	{#if showPlace && !compact && person.birthPlace}
 		<span class="place">{person.birthPlace}</span>
 	{/if}
 </div>
@@ -72,6 +85,17 @@
 		text-align: center;
 		line-height: var(--leading-tight);
 		box-sizing: border-box;
+	}
+
+	.bt-lineage-person--compact {
+		flex-direction: row;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--space-3);
+		min-width: 0;
+		max-width: none;
+		padding: 0 var(--space-2);
+		white-space: nowrap;
 	}
 
 	.bt-lineage-person--half {
