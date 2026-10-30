@@ -254,6 +254,17 @@ export async function walk(args: WalkArgs): Promise<void> {
 		const craft = (await exists(craftMdPath)) ? await readFile(craftMdPath, 'utf8') : null;
 
 		if (meta && !conflict) {
+			// A bare year (`date: 1735`) parses as a YAML number; keep relation
+			// dates as strings so everything downstream can treat them alike.
+			if (Array.isArray(meta.relations)) {
+				for (const rel of meta.relations) {
+					if (!rel || typeof rel !== 'object') continue;
+					const r = rel as unknown as Record<string, unknown>;
+					for (const field of ['date', 'from', 'to']) {
+						if (typeof r[field] === 'number') r[field] = String(r[field]);
+					}
+				}
+			}
 			// Normalise `era`: YAML string → [string], array → validated string[].
 			// Non-string / non-array values are dropped with a warning.
 			if (meta.era !== undefined) {
@@ -369,7 +380,7 @@ async function loadChapters(
 }
 
 /** Slugs a section may not use: they already name built-in sub-pages. */
-const RESERVED_SECTION_SLUGS = new Set(['craft', 'chapters', 'dictionary']);
+const RESERVED_SECTION_SLUGS = new Set(['craft', 'chapters', 'dictionary', 'lineage']);
 
 /**
  * Read the pages named by `meta.sections`, in declared order. Each slug

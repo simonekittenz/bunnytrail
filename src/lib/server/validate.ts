@@ -1,4 +1,5 @@
 import type { Collection, Entity, EntityId, HealthIssue, Kind, PropertyRegistry, RelationRegistry } from '#lib/types.js';
+import { isValidDate } from '#lib/dates.js';
 import { extractUnlabelledWikilinks, extractWikilinks, resolveWikilink } from './wikilinks';
 
 /**
@@ -563,15 +564,14 @@ export function validateRelationSchema(args: ValidateArgs): void {
 			// Validates that date/from/to are only present when the schema
 			// declares temporal, that they are valid-looking ISO-8601 date
 			// strings, and that the correct fields are used for each mode.
-			const isDate = (v: unknown): v is string =>
-				typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+			const isDate = (v: unknown): v is string => typeof v === 'string' && isValidDate(v);
 
 			if (schema.temporal === 'moment') {
 				if (rel.date !== undefined && !isDate(rel.date)) {
 					issues.push({
 						kind: 'invalid-yaml',
 						entity: entity.id,
-						detail: `relation '${rel.kind}' → ${rel.target}: 'date' must be an ISO-8601 date string (YYYY-MM-DD)`
+						detail: `relation '${rel.kind}' → ${rel.target}: 'date' must be an ISO-8601 date string (YYYY-MM-DD, YYYY-MM or YYYY)`
 					});
 				}
 				if (rel.from !== undefined || rel.to !== undefined) {
@@ -593,14 +593,14 @@ export function validateRelationSchema(args: ValidateArgs): void {
 					issues.push({
 						kind: 'invalid-yaml',
 						entity: entity.id,
-						detail: `relation '${rel.kind}' → ${rel.target}: 'from' must be an ISO-8601 date string (YYYY-MM-DD)`
+						detail: `relation '${rel.kind}' → ${rel.target}: 'from' must be an ISO-8601 date string (YYYY-MM-DD, YYYY-MM or YYYY)`
 					});
 				}
 				if (rel.to !== undefined && !isDate(rel.to)) {
 					issues.push({
 						kind: 'invalid-yaml',
 						entity: entity.id,
-						detail: `relation '${rel.kind}' → ${rel.target}: 'to' must be an ISO-8601 date string (YYYY-MM-DD)`
+						detail: `relation '${rel.kind}' → ${rel.target}: 'to' must be an ISO-8601 date string (YYYY-MM-DD, YYYY-MM or YYYY)`
 					});
 				}
 			} else {
