@@ -688,6 +688,61 @@ blockquote {
 	outline-offset: 2px;
 }
 
+/* Scroll hint: a wide table fades out on whichever side still has more
+   to scroll to. The fade widths are driven by the wrapper's own scroll
+   position (scroll-driven animations), so a table that fits gets no
+   fade, and browsers without support simply show the plain table. */
+@property --bt-fade-l {
+	syntax: '<length>';
+	inherits: false;
+	initial-value: 0px;
+}
+
+@property --bt-fade-r {
+	syntax: '<length>';
+	inherits: false;
+	initial-value: 0px;
+}
+
+@keyframes bt-fade-l {
+	to {
+		--bt-fade-l: 1.75rem;
+	}
+}
+
+@keyframes bt-fade-r {
+	from {
+		--bt-fade-r: 1.75rem;
+	}
+}
+
+@supports (animation-timeline: scroll()) {
+	.bt-table-wrap {
+		--_fade: linear-gradient(
+			to right,
+			transparent,
+			#000 var(--bt-fade-l),
+			#000 calc(100% - var(--bt-fade-r)),
+			transparent
+		);
+		-webkit-mask-image: var(--_fade);
+		mask-image: var(--_fade);
+		animation:
+			bt-fade-l linear both,
+			bt-fade-r linear both;
+		animation-timeline: scroll(self inline), scroll(self inline);
+		animation-range:
+			0 1.75rem,
+			calc(100% - 1.75rem) 100%;
+	}
+
+	/* The mask would clip the focus outline. */
+	.bt-table-wrap:focus-visible {
+		-webkit-mask-image: none;
+		mask-image: none;
+	}
+}
+
 .bt-table {
 	border-collapse: collapse;
 	min-width: 100%;
