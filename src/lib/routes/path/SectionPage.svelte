@@ -108,10 +108,15 @@
 
 		.has-toc .toc-col {
 			grid-column: 1;
+			grid-row: 1;
 			position: static;
 			max-height: none;
 			padding-bottom: var(--space-4);
 			border-bottom: var(--rule-thin);
+		}
+
+		.has-toc .prose {
+			grid-row: 2;
 		}
 	}
 

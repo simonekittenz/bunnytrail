@@ -15,9 +15,15 @@
 	/** Id of the heading currently nearest the top of the viewport. */
 	let activeId = $state<string | null>(null);
 
+	/** Open on wide screens (sticky side column); folded on narrow ones. */
+	let open = $state(true);
+
 	// Progressive enhancement: the list works as plain anchor links without
-	// any script. With one, highlight the section being read.
+	// any script. With one, fold it away on narrow screens (where it sits
+	// above the text) and highlight the section being read.
 	onMount(() => {
+		if (window.matchMedia('(max-width: 60rem)').matches) open = false;
+
 		const headings = items
 			.map((i) => document.getElementById(i.id))
 			.filter((el): el is HTMLElement => el !== null);
@@ -49,7 +55,7 @@
 -->
 {#if items.length > 0}
 	<nav class="toc" aria-label={ui.toc_title}>
-		<details open>
+		<details bind:open>
 			<summary>{ui.toc_title}</summary>
 			<ol>
 				{#each items as item (item.id)}
@@ -87,6 +93,17 @@
 
 	summary::-webkit-details-marker {
 		display: none;
+	}
+
+	summary::after {
+		content: '▸';
+		display: inline-block;
+		margin-left: var(--space-2);
+		transition: transform 0.15s;
+	}
+
+	details[open] > summary::after {
+		transform: rotate(90deg);
 	}
 
 	ol {
