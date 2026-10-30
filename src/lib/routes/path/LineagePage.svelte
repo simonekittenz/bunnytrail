@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { replaceState } from '$app/navigation';
+	import { afterNavigate, goto, replaceState } from '$app/navigation';
 	import { page } from '$app/state';
 	import { dateYear } from '#lib/dates.js';
 	import { t } from '#lib/i18n.js';
@@ -13,16 +13,21 @@
 	import LineagePersonChip from '#lib/components/LineagePersonChip.svelte';
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import SectionNav from '#lib/components/SectionNav.svelte';
+	import { LINEAGE_MAX_DOWN, LINEAGE_MAX_UP } from '#lib/lineage.js';
 	import type { LineagePageData } from './lineagePage.load';
 
 	let { data }: { data: LineagePageData } = $props();
 
 	const ui = $derived(t(page.data.world.language));
 
+	// The reader's preferred depths carry over from person to person; each
+	// person shows as many generations as they actually have, up to that.
 	// svelte-ignore state_referenced_locally
-	let up = $state(Math.min(data.defaults.up, data.availableUp));
+	let upPref = $state(data.defaults.up);
 	// svelte-ignore state_referenced_locally
-	let down = $state(Math.min(data.defaults.down, data.availableDown));
+	let downPref = $state(data.defaults.down);
+	const up = $derived(Math.min(upPref, data.availableUp));
+	const down = $derived(Math.min(downPref, data.availableDown));
 
 	const upOptions = $derived(Array.from({ length: data.availableUp + 1 }, (_, i) => i));
 	const downOptions = $derived(Array.from({ length: data.availableDown + 1 }, (_, i) => i));
@@ -36,23 +41,78 @@
 
 	// Reading the query string during prerender throws, so only do it in the browser.
 	onMount(() => {
-		up = readParam('up', data.availableUp) ?? up;
-		down = readParam('down', data.availableDown) ?? down;
+		upPref = readParam('up', LINEAGE_MAX_UP) ?? upPref;
+		downPref = readParam('down', LINEAGE_MAX_DOWN) ?? downPref;
 	});
 
 	function setDepth(key: 'up' | 'down', value: number) {
-		if (key === 'up') up = value;
-		else down = value;
+		if (key === 'up') upPref = value;
+		else downPref = value;
 		const url = new URL(page.url.href);
 		url.searchParams.set(key, String(value));
 		replaceState(url, page.state);
 	}
 
+	// Everyone in the diagram opens their own lineage view, at the same depths.
+	function lineageHref(id: string): string {
+		return `/${id}/lineage?up=${upPref}&down=${downPref}`;
+	}
+
+	interface TrailEntry {
+		id: string;
+		name: string;
+	}
+
+	const TRAIL_KEY = 'bt-lineage-trail';
+	const TRAIL_MAX = 12;
+
+	let trail = $state<TrailEntry[]>([]);
+	let trailAt = $state(-1);
+
+	function readTrail(): { entries: TrailEntry[]; at: number } | null {
+		try {
+			const raw = sessionStorage.getItem(TRAIL_KEY);
+			return raw ? JSON.parse(raw) : null;
+		} catch {
+			return null;
+		}
+	}
+
+	// The trail is the people visited by following links inside lineage views,
+	// like a browser history: going to someone new drops what was ahead.
+	function visit(continuing: boolean) {
+		const here = { id: data.entity.id, name: data.entity.name };
+		const stored = continuing ? readTrail() : null;
+		let entries = stored?.entries ?? [];
+		let at = stored?.at ?? -1;
+		const known = entries.findIndex((e) => e.id === here.id);
+		if (known !== -1) {
+			at = known;
+		} else {
+			entries = [...entries.slice(0, at + 1), here].slice(-TRAIL_MAX);
+			at = entries.length - 1;
+		}
+		trail = entries;
+		trailAt = at;
+		try {
+			sessionStorage.setItem(TRAIL_KEY, JSON.stringify({ entries, at }));
+		} catch {
+			// Storage can be unavailable (private mode); the trail just won't persist.
+		}
+	}
+
+	afterNavigate((nav) => visit(nav.from?.url.pathname.endsWith('/lineage') ?? false));
+
+	function goToTrail(index: number) {
+		const entry = trail[index];
+		if (entry) void goto(lineageHref(entry.id));
+	}
+
 	// A diagram wider than the screen starts scrolled to the focus person;
-	// `depth` is only here so a depth change re-centres.
-	function centreOnFocus(depth: number) {
+	// `key` is only here so a depth change or a new person re-centres.
+	function centreOnFocus(key: string) {
 		return (node: HTMLElement) => {
-			void depth;
+			void key;
 			const focus = node.querySelector<HTMLElement>('[aria-current="true"]');
 			if (!focus) return;
 			const box = focus.getBoundingClientRect();
@@ -128,6 +188,7 @@
 										<li>
 											<LineagePersonChip
 												person={data.people[member.id]!}
+												href={lineageHref(member.id)}
 												half={member.half}
 												compact
 											/>
@@ -140,6 +201,7 @@
 						<li class="node">
 							<LineagePersonChip
 								person={data.people[item.member.id]!}
+								href={lineageHref(item.member.id)}
 								showPlace={false}
 								half={item.member.half}
 							/>
@@ -148,7 +210,7 @@
 				{/each}
 			</ul>
 		{:else if person}
-			<LineagePersonChip {person} />
+			<LineagePersonChip {person} href={lineageHref(node.id)} />
 		{/if}
 	</li>
 {/snippet}
@@ -170,7 +232,7 @@
 						>
 						{#if years}<span class="union-years">{years}</span>{/if}
 					</span>
-					<LineagePersonChip person={partner} showPlace={false} />
+					<LineagePersonChip person={partner} href={lineageHref(partner.id)} showPlace={false} />
 				</div>
 			{/if}
 			{#if showChildren}
@@ -188,7 +250,12 @@
 	{@const person = data.people[node.id]}
 	<li class="node">
 		{#if person}
-			<LineagePersonChip {person} current={level === 0} showPlace={level === 0} />
+			<LineagePersonChip
+				{person}
+				href={level === 0 ? undefined : lineageHref(node.id)}
+				current={level === 0}
+				showPlace={level === 0}
+			/>
 		{/if}
 		{#if node.unions.some((u) => u.partner || level < down)}
 			<ul class="unions">
@@ -242,6 +309,36 @@
 		</div>
 	{/if}
 
+	{#if trail.length > 1}
+		<nav class="trail" aria-label={ui.lineage_trail_aria}>
+			<button
+				type="button"
+				disabled={trailAt <= 0}
+				aria-label={ui.lineage_trail_back}
+				title={ui.lineage_trail_back}
+				onclick={() => goToTrail(trailAt - 1)}>‹</button
+			>
+			<ol>
+				{#each trail as entry, i (entry.id)}
+					<li>
+						{#if i === trailAt}
+							<span aria-current="page">{entry.name}</span>
+						{:else}
+							<a href={lineageHref(entry.id)}>{entry.name}</a>
+						{/if}
+					</li>
+				{/each}
+			</ol>
+			<button
+				type="button"
+				disabled={trailAt >= trail.length - 1}
+				aria-label={ui.lineage_trail_forward}
+				title={ui.lineage_trail_forward}
+				onclick={() => goToTrail(trailAt + 1)}>›</button
+			>
+		</nav>
+	{/if}
+
 	<p class="legend">
 		<span>{ui.lineage_count_ancestors(data.counts.ancestors)}</span>
 		<span aria-hidden="true">·</span>
@@ -252,7 +349,7 @@
 		class="scroller"
 		role="group"
 		aria-label={ui.lineage_aria(data.entity.name)}
-		{@attach centreOnFocus(up * 10 + down)}
+		{@attach centreOnFocus(`${data.entity.id}|${up}|${down}`)}
 	>
 		<ul class="tree">
 			{@render ancestorNode(data.ancestors, 0)}
@@ -330,6 +427,68 @@
 		position: relative;
 		outline: 2px solid var(--accent);
 		outline-offset: 1px;
+	}
+
+	.trail {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--space-2);
+		margin: 0 0 var(--space-3);
+		font-size: var(--text-sm);
+		color: var(--ink-faint);
+	}
+
+	.trail ol {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: var(--space-1) var(--space-2);
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.trail li + li::before {
+		content: '›';
+		margin-right: var(--space-2);
+	}
+
+	.trail a {
+		color: var(--ink-soft);
+		text-decoration: none;
+	}
+
+	.trail a:hover {
+		color: var(--accent);
+		text-decoration: underline;
+	}
+
+	.trail [aria-current='page'] {
+		color: var(--ink);
+		font-weight: 600;
+	}
+
+	.trail button {
+		min-width: 1.6rem;
+		padding: 0 var(--space-2);
+		font: inherit;
+		font-size: var(--text-lg);
+		line-height: 1.4;
+		color: var(--ink-soft);
+		background: transparent;
+		border: 1px solid var(--rule-hair);
+		border-radius: var(--radius-sm);
+		cursor: pointer;
+	}
+
+	.trail button:hover:not(:disabled) {
+		background: var(--parchment-soft);
+	}
+
+	.trail button:disabled {
+		opacity: 0.35;
+		cursor: default;
 	}
 
 	.legend {

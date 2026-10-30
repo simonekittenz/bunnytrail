@@ -102,6 +102,9 @@ export interface Translations {
 	lineage_depth_up: string;
 	lineage_depth_down: string;
 	lineage_partnership: string;
+	lineage_trail_aria: string;
+	lineage_trail_back: string;
+	lineage_trail_forward: string;
 	lineage_half_sibling: string;
 	lineage_more_up: string;
 	lineage_more_down: string;
@@ -381,6 +384,9 @@ const en: Translations = {
 	lineage_depth_up: 'Generations up',
 	lineage_depth_down: 'Generations down',
 	lineage_partnership: 'Partnership',
+	lineage_trail_aria: 'People viewed',
+	lineage_trail_back: 'Previous person',
+	lineage_trail_forward: 'Next person',
 	lineage_half_sibling: 'Half-sibling',
 	lineage_more_up: 'Earlier generations not shown',
 	lineage_more_down: 'Later generations not shown',
@@ -661,6 +667,9 @@ const nl: Translations = {
 	lineage_depth_up: 'Generaties omhoog',
 	lineage_depth_down: 'Generaties omlaag',
 	lineage_partnership: 'Relatie',
+	lineage_trail_aria: 'Bekeken personen',
+	lineage_trail_back: 'Vorige persoon',
+	lineage_trail_forward: 'Volgende persoon',
 	lineage_half_sibling: 'Halfbroer of halfzus',
 	lineage_more_up: 'Eerdere generaties niet getoond',
 	lineage_more_down: 'Latere generaties niet getoond',

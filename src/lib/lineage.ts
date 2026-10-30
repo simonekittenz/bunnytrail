@@ -383,6 +383,12 @@ export function buildLineageIndex(
 	};
 }
 
+/** The deepest generations a lineage page is sent; the reader picks how many to show. */
+export const LINEAGE_MAX_UP = 5;
+export const LINEAGE_MAX_DOWN = 4;
+export const LINEAGE_DEFAULT_UP = 3;
+export const LINEAGE_DEFAULT_DOWN = 2;
+
 // ── Trees ─────────────────────────────────────────────────────────────
 
 export interface AncestorNode {

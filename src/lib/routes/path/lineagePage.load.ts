@@ -1,6 +1,10 @@
 import { graph } from '#lib/server/graph.js';
 import { collectLineagePeople } from '#lib/server/lineageView.js';
 import {
+	LINEAGE_DEFAULT_DOWN,
+	LINEAGE_DEFAULT_UP,
+	LINEAGE_MAX_DOWN,
+	LINEAGE_MAX_UP,
 	ancestorDepth,
 	ancestorTree,
 	countAncestors,
@@ -10,12 +14,6 @@ import {
 } from '#lib/lineage.js';
 import type { Entity } from '#lib/types.js';
 import { buildSectionNav, subpageBreadcrumbs } from './subpage';
-
-/** The deepest generations sent to the page; the reader picks how many to show. */
-export const LINEAGE_MAX_UP = 5;
-export const LINEAGE_MAX_DOWN = 4;
-export const LINEAGE_DEFAULT_UP = 3;
-export const LINEAGE_DEFAULT_DOWN = 2;
 
 /**
  * View-model for a person's lineage page (`/<id>/lineage`): one diagram

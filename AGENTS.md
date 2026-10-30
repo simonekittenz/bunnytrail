@@ -349,7 +349,12 @@ the per-person view model. `Edge` carries `date` / `dateFrom` / `dateTo`.
 `LineagePage.svelte`, a tab in `SectionNav`) is one diagram: ancestors
 above on a bar, the person sharing a row with their siblings (half-siblings
 dashed, `siblingRowOf`), and their partners and descendants hanging below.
-Parent rows are bottom-aligned so every parent meets its bar. Trees are sent to
+Parent rows are bottom-aligned so every parent meets its bar. Three or more
+siblings on one side of the person collapse into a compact stack. Everyone in
+the diagram links to *their* lineage view at the reader's depths (the focus
+chip opens the full entity page); a trail of the people visited
+(`sessionStorage`, browser-history semantics) with ‹ › buttons sits above.
+Trees are sent to
 max depth (`LINEAGE_MAX_UP/DOWN`) and trimmed client-side, so the depth
 control (`?up=&down=`) works on prerendered builds. `/lineage`
 (`routes/lineage/`) lists the earliest known ancestors and a filterable
