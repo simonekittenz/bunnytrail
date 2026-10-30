@@ -60,7 +60,14 @@
 		// as '1' by vite.ipad.config.ts; undefined in all other builds.
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		if (!(import.meta as any).env?.VITE_IPAD_BUILD) {
-			injectAnalytics({ mode: dev ? 'development' : 'production' });
+			// Analytics must never take the page down with it: the current
+			// @vercel/analytics canary still imports `$app/stores`, which
+			// SvelteKit 3 removed, so this can throw at mount.
+			try {
+				injectAnalytics({ mode: dev ? 'development' : 'production' });
+			} catch (err) {
+				console.warn('[bunnytrail] analytics disabled:', err);
+			}
 		}
 
 		// In dev, subscribe to the graph-reload SSE stream so that any
