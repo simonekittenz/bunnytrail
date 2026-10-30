@@ -43,28 +43,52 @@ export function startWatcher(): void {
 	if (!dev || started) return;
 	started = true;
 
+	// Each `load()` ignores calls made while one is already running, so a
+	// save landing mid-reload would be lost (and the page left stale until
+	// the next edit). Run reload cycles one at a time instead, and if
+	// anything changed during a cycle, run one more when it finishes.
+	let reloading = false;
+	let dirty = false;
+	const reloadAll = async () => {
+		if (reloading) {
+			dirty = true;
+			return;
+		}
+		reloading = true;
+		try {
+			do {
+				dirty = false;
+				await Promise.all([
+					graph.load().catch((err) => {
+						console.error('[bunnytrail] graph reload failed:', err);
+					}),
+					blog.load().catch((err) => {
+						console.error('[bunnytrail] blog reload failed:', err);
+					}),
+					guides.load().catch((err) => {
+						console.error('[bunnytrail] guides reload failed:', err);
+					}),
+					sources.load().catch((err) => {
+						console.error('[bunnytrail] sources reload failed:', err);
+					}),
+					influences.load().catch((err) => {
+						console.error('[bunnytrail] influences reload failed:', err);
+					}),
+					world.load().catch((err) => {
+						console.error('[bunnytrail] world reload failed:', err);
+					})
+				]);
+			} while (dirty);
+		} finally {
+			reloading = false;
+		}
+	};
+
 	let timer: ReturnType<typeof setTimeout> | null = null;
 	const trigger = () => {
 		if (timer) clearTimeout(timer);
 		timer = setTimeout(() => {
-			void graph.load().catch((err) => {
-				console.error('[bunnytrail] graph reload failed:', err);
-			});
-			void blog.load().catch((err) => {
-				console.error('[bunnytrail] blog reload failed:', err);
-			});
-			void guides.load().catch((err) => {
-				console.error('[bunnytrail] guides reload failed:', err);
-			});
-			void sources.load().catch((err) => {
-				console.error('[bunnytrail] sources reload failed:', err);
-			});
-			void influences.load().catch((err) => {
-				console.error('[bunnytrail] influences reload failed:', err);
-			});
-			void world.load().catch((err) => {
-				console.error('[bunnytrail] world reload failed:', err);
-			});
+			void reloadAll();
 		}, 75);
 	};
 
