@@ -6,6 +6,7 @@ import { world } from '#lib/server/world.js';
 import { assets } from '#lib/server/assets.js';
 import { blog } from '#lib/server/blog.js';
 import { readDirents } from '#lib/server/walker.js';
+import { countWords, entityWordCount, hasProse } from '#lib/server/prose.js';
 import { CONTENT_DIR } from '#lib/server/globals.js';
 import { join } from 'path';
 
@@ -129,15 +130,12 @@ export async function load() {
 		.slice(0, 6);
 
 	const entities = graph.all();
-	const entitiesWithProse = entities.filter((e) => e.body.trim().length > 0).length;
+	const entitiesWithProse = entities.filter(hasProse).length;
 	const entitiesStub = entities.length - entitiesWithProse;
-	const countWords = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0);
 
 	const totalWords =
-		// Entity bodies + summaries
-		entities.reduce((n, e) => {
-			return n + countWords(e.body) + countWords(e.meta.summary ?? '');
-		}, 0) +
+		// Entity bodies + sections + summaries
+		entities.reduce((n, e) => n + entityWordCount(e), 0) +
 		// Timeline line bodies + every dot body
 		[...graph.timelines().values()].reduce((n, tl) => {
 			return (

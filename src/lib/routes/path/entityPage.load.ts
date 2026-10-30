@@ -3,6 +3,7 @@ import type { SpeciesPresenceEntry } from '#lib/server/graph.js';
 import { world } from '#lib/server/world.js';
 import { inlineSvgFigures } from '#lib/server/inlineSvgs.js';
 import { extractHeadings, parseTocSetting, resolveToc } from '#lib/server/toc.js';
+import { hasProse } from '#lib/server/prose.js';
 import { resolveListenTemplate } from '#lib/listen.js';
 import { makeCollectionResolver, renderEntityBody, renderSummary } from '#lib/server/markdown.js';
 import { formatCalendarRange } from '#lib/calendar.js';
@@ -590,7 +591,7 @@ export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor')
 		issues: graph.issues().filter((i) => i.entity === entity.id),
 		yamlPath: entity.yamlPath,
 		mdPath: entity.mdPath,
-		isStub: !entity.body.trim(),
+		isStub: !hasProse(entity),
 		kind: kindId ?? null,
 		classId: classId ?? null
 	};
