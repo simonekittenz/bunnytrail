@@ -760,7 +760,18 @@ export interface PresenceStat {
 	entries: PresenceEntry[];
 }
 
-export type StatBlock = PopulationStat | PresenceStat;
+export interface SurfaceSlice {
+	label: string;
+	percentage: number;
+}
+
+/** Terrain / surface-coverage breakdown of a place (e.g. a planet). */
+export interface SurfaceStat {
+	kind: 'surface';
+	slices: SurfaceSlice[];
+}
+
+export type StatBlock = PopulationStat | PresenceStat | SurfaceStat;
 
 /**
  * Normalise the raw `statistics` frontmatter value into typed stat blocks.
@@ -791,9 +802,43 @@ function parseStatistics(
 			const pop = parsePopulation(entry.population, resolveEntity);
 			if (pop) blocks.push(pop);
 		}
+		if ('surface' in entry) {
+			const surface = parseSurface(entry.surface);
+			if (surface) blocks.push(surface);
+		}
 	}
 
 	return blocks;
+}
+
+/**
+ * `surface:` takes the same list-of-objects shape as `population`, with
+ * slices labelled by a free-text `type` (no entity link):
+ *   - surface:
+ *     - slices:
+ *       - type: open water
+ *         percentage: 83
+ */
+function parseSurface(raw: unknown): SurfaceStat | null {
+	if (!Array.isArray(raw)) return null;
+
+	const slices: SurfaceSlice[] = [];
+	for (const item of raw) {
+		if (!item || typeof item !== 'object') continue;
+		const entry = item as Record<string, unknown>;
+		if (!Array.isArray(entry.slices)) continue;
+		for (const s of entry.slices) {
+			if (!s || typeof s !== 'object') continue;
+			const slice = s as Record<string, unknown>;
+			const label = [slice.type, slice.label, slice.name].find(
+				(v): v is string => typeof v === 'string' && v.trim() !== ''
+			);
+			if (label === undefined || typeof slice.percentage !== 'number') continue;
+			slices.push({ label: label.trim(), percentage: slice.percentage });
+		}
+	}
+
+	return slices.length > 0 ? { kind: 'surface', slices } : null;
 }
 
 function parsePopulation(

@@ -161,7 +161,52 @@
 {#if blocks.length > 0}
 	<div class="statistics-panel">
 		{#each blocks as block (block.kind)}
-		{#if block.kind === 'population'}
+		{#if block.kind === 'surface'}
+			{@const surfaceSlices = block.slices.map((s) => ({
+				speciesId: s.label,
+				speciesName: s.label,
+				href: null,
+				percentage: s.percentage,
+				count: null
+			}))}
+			{@const surfaceTotal = surfaceSlices.reduce((s, sl) => s + sl.percentage, 0)}
+			{@const surfaceRemainder = Math.round((100 - surfaceTotal) * 10) / 10}
+			{@const allSurface = surfaceRemainder > 0.4
+				? [...surfaceSlices, { speciesId: '__other__', speciesName: 'Other', href: null, percentage: surfaceRemainder, count: null }]
+				: surfaceSlices}
+			{@const surfaceArcs = buildArcs(allSurface)}
+			{@const singleSurface = allSurface.length === 1 ? allSurface[0] : null}
+			<section class="stat-block stat-block--surface">
+				<h2 class="stat-heading">Surface</h2>
+				{#if surfaceArcs || singleSurface}
+					<div class="stat-chart-wrap">
+						<div class="stat-chart">
+							<svg viewBox="0 0 300 300" width="220" height="220" aria-hidden="true" focusable="false">
+								{#if surfaceArcs}
+									{#each surfaceArcs as arc (arc.slice.speciesId)}
+										<path d={arc.path} fill={arc.color} />
+									{/each}
+								{:else if singleSurface}
+									<circle cx={CX} cy={CY} r={R} fill={PALETTE[0]} />
+								{/if}
+							</svg>
+						</div>
+						<ul class="stat-legend">
+							{#each allSurface as slice, i (slice.speciesId)}
+								<li class="stat-legend__item">
+									<span
+										class="stat-legend__swatch"
+										style:background-color={slice.speciesId === '__other__' ? '#d4cdc4' : PALETTE[i % PALETTE.length]}
+									></span>
+									<span class="stat-legend__label">{slice.speciesName}</span>
+									<span class="stat-legend__pct">({formatPct(slice.percentage)})</span>
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
+			</section>
+		{:else if block.kind === 'population'}
 			{@const sliceTotal = block.slices.reduce((s, sl) => s + sl.percentage, 0)}
 			{@const remainder = Math.round((100 - sliceTotal) * 10) / 10}
 			{@const allSlices = remainder > 0.4
