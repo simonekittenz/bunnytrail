@@ -316,7 +316,7 @@
 	/* With a search box the bar stays put while the list scrolls under it. */
 	.vocab-bar--searchable {
 		position: sticky;
-		top: 0;
+		top: var(--bt-section-nav-h, 0px);
 		z-index: 5;
 		display: grid;
 		grid-template-columns: 2.5rem auto minmax(8rem, 1fr) auto;

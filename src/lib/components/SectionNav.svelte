@@ -13,6 +13,17 @@
 
 	const ui = $derived(t(page.data.world.language));
 
+	let navHeight = $state(0);
+	const visible = $derived(items.length > 1);
+
+	// Published so other sticky things (the dictionary's filter bar, the
+	// table of contents) can sit just under the tabs instead of behind them.
+	$effect(() => {
+		const root = document.documentElement;
+		root.style.setProperty('--bt-section-nav-h', `${visible ? navHeight : 0}px`);
+		return () => root.style.removeProperty('--bt-section-nav-h');
+	});
+
 	function label(item: SectionNavItem): string {
 		if (item.key === 'overview') return ui.section_overview;
 		if (item.key === 'dictionary') return ui.section_dictionary;
@@ -27,8 +38,8 @@
 	state, so every page is addressable, prerenderable and searchable.
 	Styled to match the entity page's own tab bar.
 -->
-{#if items.length > 1}
-	<nav class="bt-section-nav" aria-label={ui.section_nav_aria}>
+{#if visible}
+	<nav class="bt-section-nav" aria-label={ui.section_nav_aria} bind:offsetHeight={navHeight}>
 		{#each items as item (item.slug)}
 			<a
 				class="link"
@@ -43,12 +54,19 @@
 {/if}
 
 <style>
+	/* The tabs stay on screen while the page scrolls under them. */
 	.bt-section-nav {
+		position: sticky;
+		top: 0;
+		z-index: 6;
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: center;
 		gap: var(--space-2) var(--space-4);
 		margin: 0 0 var(--space-5) 0;
+		padding: var(--space-3) 0 0;
+		background: var(--page, var(--parchment));
+		border-bottom: 1px solid var(--rule-hair);
 	}
 
 	.link {

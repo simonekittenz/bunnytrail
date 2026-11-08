@@ -1140,8 +1140,8 @@
 		grid-column: 1;
 		grid-row: 1 / span 99;
 		position: sticky;
-		top: var(--space-5);
-		max-height: calc(100vh - var(--space-7));
+		top: calc(var(--bt-section-nav-h, 0px) + var(--space-5));
+		max-height: calc(100vh - var(--bt-section-nav-h, 0px) - var(--space-7));
 		overflow-y: auto;
 		min-width: 0;
 	}
@@ -1150,7 +1150,7 @@
 	.prose :global(h2),
 	.prose :global(h3),
 	.prose :global(h4) {
-		scroll-margin-top: var(--space-6);
+		scroll-margin-top: calc(var(--bt-section-nav-h, 0px) + var(--space-6));
 	}
 
 	.sidebar--top {
