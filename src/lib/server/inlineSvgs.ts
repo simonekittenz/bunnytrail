@@ -89,7 +89,10 @@ async function buildReplacement(
 	src: string,
 	post: string
 ): Promise<string> {
-	const alt = extractAttr(`${pre} ${post}`, 'alt');
+	const rawAlt = extractAttr(`${pre} ${post}`, 'alt');
+	// The markdown renderer has already escaped the alt text; decode it so
+	// escaping it again for the caption doesn't show `&#39;` literally.
+	const alt = rawAlt === null ? null : unescapeHtml(rawAlt);
 
 	if (isSvgSrc(src)) {
 		return buildSvgReplacement(original, pre, src, post, alt);
@@ -253,6 +256,15 @@ function extractAttr(attrs: string, name: string): string | null {
 	const re = new RegExp(`\\b${name}="([^"]*)"`, 'i');
 	const m = attrs.match(re);
 	return m ? m[1] : null;
+}
+
+function unescapeHtml(s: string): string {
+	return s
+		.replace(/&lt;/g, '<')
+		.replace(/&gt;/g, '>')
+		.replace(/&quot;/g, '"')
+		.replace(/&#0*39;|&apos;/g, "'")
+		.replace(/&amp;/g, '&');
 }
 
 function escapeHtml(s: string): string {
