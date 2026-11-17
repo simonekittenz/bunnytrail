@@ -394,6 +394,15 @@ export function buildKindTree(declarations: Map<string, string | null>): KindTre
 }
 
 /**
+ * Every kind an entity belongs to, primary first. Falls back to `kind` for
+ * metas that were never normalised (hand-built in tests, say).
+ */
+export function kindsOf(meta: { kind?: unknown; kinds?: readonly string[] }): string[] {
+	if (meta.kinds && meta.kinds.length > 0) return [...meta.kinds];
+	return typeof meta.kind === 'string' && meta.kind ? [meta.kind] : [];
+}
+
+/**
  * Title-case a kebab-case slug: `celestial-bodies` → `Celestial Bodies`.
  */
 export function titleCaseSlug(slug: string): string {
@@ -532,6 +541,13 @@ export interface EntityMeta {
 	 * "Unregistered" section on `/kinds`.
 	 */
 	kind?: string;
+	/**
+	 * Every kind this entity belongs to, primary first. Authored as a list
+	 * under `kind:` (`kind: [temple-complex, city]`); the loader normalises
+	 * it so `kind` holds the first entry and `kinds` holds all of them.
+	 * Absent when the entity has no valid kind. Use `kindsOf()` to read it.
+	 */
+	kinds?: string[];
 	/** "active" | "deceased" | "lost" | "ruined" | anything else. */
 	status?: string;
 	/**

@@ -13,7 +13,7 @@ import type {
 	Timeline,
 	VocabEntry
 } from '#lib/types.js';
-import { folderLabels, titleCaseSlug } from '#lib/types.js';
+import { folderLabels, kindsOf, titleCaseSlug } from '#lib/types.js';
 import { CONTENT_DIR } from './globals';
 import { buildEdges, loadAll, resolveWikilink } from './loader';
 import {
@@ -806,22 +806,23 @@ export class Graph {
 	}
 
 	/**
-	 * Entities whose `meta.kind` is `kind` or any descendant of `kind`
+	 * Entities with `kind` or any descendant of `kind` among their kinds,
 	 * in the kind hierarchy (computed from the registry's folder
 	 * nesting). Useful for supertype filters and pages that want
-	 * every member of a kind family.
+	 * every member of a kind family. A multi-kinded entity appears
+	 * once, whichever of its kinds matched.
 	 *
 	 * If `kind` is not in the registry, falls back to strict
-	 * `meta.kind === kind` matching — so free-form kinds keep working.
+	 * kind-id matching — so free-form kinds keep working.
 	 */
 	byKindRecursive(kind: string): Entity[] {
 		const family = this.#descendantsInclusive(kind);
-		return this.all().filter((e) => typeof e.meta.kind === 'string' && family.has(e.meta.kind));
+		return this.all().filter((e) => kindsOf(e.meta).some((k) => family.has(k)));
 	}
 
-	/** Direct entities of a registered kind id. */
+	/** Direct entities of a registered kind id (primary or secondary). */
 	byKind(kind: string): Entity[] {
-		return this.all().filter((e) => e.meta.kind === kind);
+		return this.all().filter((e) => kindsOf(e.meta).includes(kind));
 	}
 
 	/**
@@ -1398,7 +1399,7 @@ export class Graph {
 		const scored: { entity: Entity; score: number }[] = [];
 
 		for (const entity of this.all()) {
-			if (kindFilter && entity.meta.kind !== kindFilter) continue;
+			if (kindFilter && !kindsOf(entity.meta).includes(kindFilter)) continue;
 
 			const name = entity.meta.name.toLowerCase();
 			const summary = (entity.meta.summary ?? '').toLowerCase();
@@ -1484,7 +1485,9 @@ export class Graph {
 		return topEntities.slice(0, 3).map((e) => {
 			// Resolve searchContext fields declared on the entity's kind.
 			let context: string | null = null;
-			const kindMeta = e.meta.kind ? this.kind(e.meta.kind)?.meta : undefined;
+			const kindMeta = kindsOf(e.meta)
+				.map((k) => this.kind(k)?.meta)
+				.find((m) => m?.searchContext?.length);
 			if (kindMeta?.searchContext?.length) {
 				const parts = kindMeta.searchContext
 					.map((field: string) => {

@@ -237,6 +237,41 @@ The `class` chain on an entity (entity → `class` target → target's `class`
 target → …) is also used by the `governedBy` backing-edge check — see
 [`governedBy`](#governedby) above.
 
+## Multi-kinded entities
+
+An entity may belong to more than one kind. Author `kind` as a list; the
+**first entry is the primary kind**.
+
+```yaml
+name: Saulam Karat
+kind: [temple-complex, city]
+```
+
+The loader normalises this to `meta.kind` (the primary, a string — so
+single-kind code keeps working) and `meta.kinds` (every kind, primary first,
+duplicates removed). Read it with `kindsOf(meta)` from `#lib/types.js`; a
+plain `kind: city` yields `['city']`.
+
+Wherever a kind grants something, *any* of the entity's kinds counts:
+
+- **Relations** — `domain`, `codomain` and `qualifierDomain` are satisfied if
+  any kind (or an ancestor of it) matches, so the entity can be the source or
+  target of relations from both kinds' vocabularies.
+- **Properties** — a property declared on any of the kinds (or their ancestors)
+  is valid, and its label/unit resolve from it.
+- **`class`** — an entity inherits the class constraint of each of its kinds;
+  the class target must satisfy all of them.
+- **Kind pages, kind counts, collection filter chips, search** — the entity
+  appears under each of its kinds, once per kind (never twice under a shared
+  ancestor).
+- **`eraBounded`** — set on any one of the kinds is enough.
+- **Registry check** — each kind in the list must be registered; an
+  unregistered one is reported separately.
+
+The primary kind alone drives *singular* presentation: card eyebrows, the
+graph node colour, and which group heading the entity sits under inside its
+parent. The entity page header shows a chip for every kind.
+
 ## `world.md` strictness toggles
 
 `content_meta/world.md` holds two global strictness booleans. Both default to

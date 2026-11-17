@@ -167,28 +167,26 @@
 		// class entity id is the leaf discriminator (e.g. the Human entity
 		// id); otherwise fall back to kind. This makes "Human", "Nguwari"
 		// etc. appear as filter chips instead of just "person".
+		//
+		// A multi-kinded entity counts once under each of its kinds. Keys
+		// are collected per entity (as Sets) so two kinds sharing an
+		// ancestor don't count that ancestor twice.
 		const direct = new Map<string, number>();
-		for (const e of filterEntitySet) {
-			const k = e.classId ?? e.kind ?? '—';
-			direct.set(k, (direct.get(k) ?? 0) + 1);
-		}
-		// For each direct kind (non-class) in the tree, accumulate ancestor totals.
 		const supertypeTotals = new Map<string, number>();
-		for (const [kind, count] of direct) {
-			if (!kindTree.has(kind)) continue;
-			for (const ancestor of kindTree.ancestors(kind)) {
-				supertypeTotals.set(ancestor, (supertypeTotals.get(ancestor) ?? 0) + count);
-			}
-		}
-		// Also accumulate ancestor totals for entities whose class maps to
-		// a kind in the hierarchy (class entities are not in the kindTree,
-		// but their owner's kind is — we look it up from the card).
 		for (const e of filterEntitySet) {
-			if (!e.classId) continue;
-			const k = e.kind ?? '—';
-			if (!kindTree.has(k)) continue;
-			for (const ancestor of kindTree.ancestors(k)) {
-				supertypeTotals.set(ancestor, (supertypeTotals.get(ancestor) ?? 0) + 1);
+			const kinds = cardKinds(e);
+			const leafKeys = new Set<string>(e.classId ? [e.classId] : kinds);
+			for (const k of leafKeys) direct.set(k, (direct.get(k) ?? 0) + 1);
+			// Ancestor totals come from the entity's kinds (class entities
+			// aren't in the kindTree, but their owner's kinds are).
+			const ancestorKeys = new Set<string>();
+			for (const k of kinds) {
+				if (!kindTree.has(k)) continue;
+				for (const ancestor of kindTree.ancestors(k)) ancestorKeys.add(ancestor);
+			}
+			for (const a of ancestorKeys) {
+				if (leafKeys.has(a)) continue; // already counted as a direct kind
+				supertypeTotals.set(a, (supertypeTotals.get(a) ?? 0) + 1);
 			}
 		}
 		// A kind that is both a *direct* kind on the page (some entity
@@ -222,17 +220,25 @@
 			.sort(([a], [b]) => a.localeCompare(b));
 	});
 
-	function matchesKind(card: { kind: string | null; classId?: string | null }): boolean {
+	/** Every kind a card carries (primary first); `—` when it has none. */
+	function cardKinds(card: { kind: string | null; kinds?: string[] }): string[] {
+		if (card.kinds && card.kinds.length > 0) return card.kinds;
+		return [card.kind ?? '—'];
+	}
+
+	function matchesKind(card: {
+		kind: string | null;
+		kinds?: string[];
+		classId?: string | null;
+	}): boolean {
 		if (activeKind === null) return true;
+		const kinds = cardKinds(card);
 		// Class id is the leaf key when present.
-		const leafKey = card.classId ?? card.kind ?? '—';
-		if (leafKey === activeKind) return true;
+		if (card.classId ? card.classId === activeKind : kinds.includes(activeKind)) return true;
 		// Walk kind ancestors so a supertype chip selects every descendant.
 		// Class entities aren't in the kindTree, so we walk ancestors of
-		// the entity's kind instead.
-		const kindKey = card.kind ?? '—';
-		if (!kindTree.has(kindKey)) return false;
-		return kindTree.ancestors(kindKey).includes(activeKind);
+		// the entity's kinds instead.
+		return kinds.some((k) => kindTree.has(k) && kindTree.ancestors(k).includes(activeKind!));
 	}
 
 	function matchesTags(card: { tags: string[] }): boolean {

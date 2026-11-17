@@ -1,4 +1,5 @@
 import type { Collection, Entity, EntityId, HealthIssue, Kind, PropertyRegistry, RelationRegistry } from '#lib/types.js';
+import { kindsOf } from '#lib/types.js';
 import { isValidDate } from '#lib/dates.js';
 import { extractUnlabelledWikilinks, extractWikilinks, resolveWikilink } from './wikilinks';
 
@@ -196,12 +197,14 @@ export function validateEntityKinds(args: ValidateArgs): void {
 			});
 			continue;
 		}
-		if (!kindRegistry.has(k)) {
-			issues.push({
-				kind: 'invalid-yaml',
-				entity: entity.id,
-				detail: `kind '${k}' is not registered in content_meta/kinds/`
-			});
+		for (const each of kindsOf(entity.meta)) {
+			if (!kindRegistry.has(each)) {
+				issues.push({
+					kind: 'invalid-yaml',
+					entity: entity.id,
+					detail: `kind '${each}' is not registered in content_meta/kinds/`
+				});
+			}
 		}
 	}
 }
@@ -301,28 +304,37 @@ export function validateClassField(args: ValidateArgs): void {
 			continue;
 		}
 
-		const entityKind = typeof entity.meta.kind === 'string' ? entity.meta.kind : null;
-		const constraint = entityKind ? classConstraintFor(entityKind) : null;
+		// A multi-kinded entity may carry several class constraints; the target
+		// has to satisfy every one of them.
+		const entityKinds = kindsOf(entity.meta);
+		const entityKindLabel = entityKinds.length > 0 ? entityKinds.join(', ') : '(none)';
+		const constraints = [
+			...new Set(
+				entityKinds.map((k) => classConstraintFor(k)).filter((c): c is string => c !== null)
+			)
+		];
 
 		// Check 2: entity's kind must have a class constraint.
-		if (!constraint) {
+		if (constraints.length === 0) {
 			issues.push({
 				kind: 'property-kind-mismatch',
 				entity: entity.id,
-				detail: `entity has 'class: ${cls}' but kind '${entityKind ?? '(none)'}' does not declare a class constraint`
+				detail: `entity has 'class: ${cls}' but kind '${entityKindLabel}' does not declare a class constraint`
 			});
 			continue;
 		}
 
-		// Check 3: class target's kind must satisfy the constraint.
+		// Check 3: class target's kinds must satisfy each constraint.
 		const targetEntity = entities.get(cls)!;
-		const targetKind = typeof targetEntity.meta.kind === 'string' ? targetEntity.meta.kind : null;
-		const targetAncestors = targetKind ? ancestors(targetKind) : new Set<string>();
-		if (!targetAncestors.has(constraint)) {
+		const targetKinds = kindsOf(targetEntity.meta);
+		const targetAncestors = new Set<string>();
+		for (const k of targetKinds) for (const a of ancestors(k)) targetAncestors.add(a);
+		for (const constraint of constraints) {
+			if (targetAncestors.has(constraint)) continue;
 			issues.push({
 				kind: 'property-kind-mismatch',
 				entity: entity.id,
-				detail: `class target '${cls}' has kind '${targetKind ?? '(none)'}' which is not '${constraint}' or a descendant (required by kind '${entityKind}')`
+				detail: `class target '${cls}' has kind '${targetKinds.join(', ') || '(none)'}' which is not '${constraint}' or a descendant (required by kind '${entityKindLabel}')`
 			});
 		}
 	}
@@ -481,11 +493,14 @@ export function validateRelationSchema(args: ValidateArgs): void {
 		return result;
 	}
 
-	function satisfiesConstraint(entityKind: string | undefined, constraint: string[]): boolean {
-		if (!entityKind) return false;
-		const entityAncestors = ancestors(entityKind);
-		return constraint.some((c) => entityAncestors.has(c));
+	// A multi-kinded entity satisfies a constraint when *any* of its kinds does.
+	function satisfiesConstraint(entityKinds: string[], constraint: string[]): boolean {
+		return entityKinds.some((k) => {
+			const entityAncestors = ancestors(k);
+			return constraint.some((c) => entityAncestors.has(c));
+		});
 	}
+	const describeKinds = (ks: string[]) => (ks.length > 0 ? ks.join(', ') : '(none)');
 
 	for (const entity of entities.values()) {
 		// Track which relation kinds have already emitted a domain issue for this
@@ -516,13 +531,13 @@ export function validateRelationSchema(args: ValidateArgs): void {
 
 			// Check 2: domain constraint (source entity) — one issue per relation kind
 			if (schema.domain && schema.domain.length > 0 && !domainIssued.has(rel.kind)) {
-				const sourceKind = entity.meta.kind;
-				if (!satisfiesConstraint(sourceKind, schema.domain)) {
+				const sourceKinds = kindsOf(entity.meta);
+				if (!satisfiesConstraint(sourceKinds, schema.domain)) {
 					domainIssued.add(rel.kind);
 					issues.push({
 						kind: 'invalid-yaml',
 						entity: entity.id,
-						detail: `relation '${rel.kind}': source kind '${sourceKind ?? '(none)'}' does not satisfy domain [${schema.domain.join(', ')}]`
+						detail: `relation '${rel.kind}': source kind '${describeKinds(sourceKinds)}' does not satisfy domain [${schema.domain.join(', ')}]`
 					});
 				}
 			}
@@ -531,12 +546,12 @@ export function validateRelationSchema(args: ValidateArgs): void {
 			if (schema.codomain && schema.codomain.length > 0) {
 				const target = entities.get(rel.target);
 				if (target) {
-					const targetKind = target.meta.kind;
-					if (!satisfiesConstraint(targetKind, schema.codomain)) {
+					const targetKinds = kindsOf(target.meta);
+					if (!satisfiesConstraint(targetKinds, schema.codomain)) {
 						issues.push({
 							kind: 'invalid-yaml',
 							entity: entity.id,
-							detail: `relation '${rel.kind}' → ${rel.target}: target kind '${targetKind ?? '(none)'}' does not satisfy codomain [${schema.codomain.join(', ')}]`
+							detail: `relation '${rel.kind}' → ${rel.target}: target kind '${describeKinds(targetKinds)}' does not satisfy codomain [${schema.codomain.join(', ')}]`
 						});
 					}
 				}
@@ -549,12 +564,12 @@ export function validateRelationSchema(args: ValidateArgs): void {
 			if (schema.qualifierDomain && schema.qualifierDomain.length > 0 && rel.qualifier) {
 				const qualEntity = entities.get(rel.qualifier);
 				if (qualEntity) {
-					const qualKind = qualEntity.meta.kind;
-					if (!satisfiesConstraint(qualKind, schema.qualifierDomain)) {
+					const qualKinds = kindsOf(qualEntity.meta);
+					if (!satisfiesConstraint(qualKinds, schema.qualifierDomain)) {
 						issues.push({
 							kind: 'invalid-yaml',
 							entity: entity.id,
-							detail: `relation '${rel.kind}' → ${rel.target}: qualifier '${rel.qualifier}' kind '${qualKind ?? '(none)'}' does not satisfy qualifierDomain [${schema.qualifierDomain.join(', ')}]`
+							detail: `relation '${rel.kind}' → ${rel.target}: qualifier '${rel.qualifier}' kind '${describeKinds(qualKinds)}' does not satisfy qualifierDomain [${schema.qualifierDomain.join(', ')}]`
 						});
 					}
 				}
@@ -809,6 +824,7 @@ const KNOWN_ENTITY_META_FIELDS = new Set([
 	'tags',
 	'era',
 	'kind',
+	'kinds',
 	'type',
 	'plural',
 	'status',
@@ -945,8 +961,10 @@ export function validatePropertySchema(args: ValidateArgs): void {
 			// Check 2: kind scope — entity's kind must satisfy at least one declaration.
 			// A property key may be overloaded across unrelated kinds; it is valid as
 			// long as the entity's kind (or any of its ancestors) matches any declaringKind.
-			const entityKind = entity.meta.kind;
-			const entityAncestors = entityKind ? ancestors(entityKind) : new Set<string>();
+			const entityKinds = kindsOf(entity.meta);
+			const entityKind = entityKinds.length > 0 ? entityKinds.join(', ') : undefined;
+			const entityAncestors = new Set<string>();
+			for (const k of entityKinds) for (const a of ancestors(k)) entityAncestors.add(a);
 			const matchingSchemas = schemas.filter((s) => entityAncestors.has(s.declaringKind));
 
 			if (matchingSchemas.length === 0) {

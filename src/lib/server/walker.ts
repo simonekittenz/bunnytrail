@@ -265,6 +265,28 @@ export async function walk(args: WalkArgs): Promise<void> {
 					}
 				}
 			}
+			// Normalise `kind`: a list (`kind: [temple-complex, city]`) makes the
+			// entity multi-kinded. `kind` keeps the first entry (the primary, used
+			// for labels and grouping); `kinds` holds every entry.
+			const rawKind = (meta as { kind?: unknown }).kind;
+			if (Array.isArray(rawKind)) {
+				const valid = [
+					...new Set(
+						rawKind
+							.filter((v): v is string => typeof v === 'string')
+							.map((v) => v.trim())
+							.filter((v) => v.length > 0)
+					)
+				];
+				if (valid.length !== new Set(rawKind).size) {
+					issues.push({ kind: 'invalid-yaml', entity: id, detail: `kind list contains non-string or empty values` });
+				}
+				(meta as Record<string, unknown>)['kind'] = valid[0];
+				(meta as Record<string, unknown>)['kinds'] = valid.length > 0 ? valid : undefined;
+			} else if (typeof rawKind === 'string' && rawKind.length > 0) {
+				(meta as Record<string, unknown>)['kinds'] = [rawKind];
+			}
+
 			// Normalise `era`: YAML string → [string], array → validated string[].
 			// Non-string / non-array values are dropped with a warning.
 			if (meta.era !== undefined) {

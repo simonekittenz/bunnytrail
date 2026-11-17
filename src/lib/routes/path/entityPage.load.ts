@@ -7,7 +7,7 @@ import { hasProse } from '#lib/server/prose.js';
 import { resolveListenTemplate } from '#lib/listen.js';
 import { makeCollectionResolver, renderEntityBody, renderSummary } from '#lib/server/markdown.js';
 import { formatCalendarRange } from '#lib/calendar.js';
-import { titleCaseSlug, toRoman, relationLabel, type Entity, type RankDisplay, type VocabEntry } from '#lib/types.js';
+import { kindsOf, titleCaseSlug, toRoman, relationLabel, type Entity, type RankDisplay, type VocabEntry } from '#lib/types.js';
 import type { ViewMode } from '#lib/cluster.js';
 import { buildSectionNav, folderBreadcrumbs } from './subpage';
 
@@ -115,13 +115,21 @@ export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor')
 		return 'arabic';
 	})();
 
+	// A multi-kinded entity keeps its primary kind in the chip and lists the
+	// rest in `also`, rendered as further chips beside it.
 	const kindChip = kindId
 		? {
 				id: kindId,
 				label: kindObj?.meta.singular ?? titleCaseSlug(kindId),
 				broken: !kindObj,
 				rank: typeof entity.meta.rank === 'number' ? entity.meta.rank : null,
-				rankDisplay: folderRankDisplay
+				rankDisplay: folderRankDisplay,
+				also: kindsOf(entity.meta)
+					.filter((k) => k !== kindId)
+					.map((k) => {
+						const ko = graph.kind(k);
+						return { id: k, label: ko?.meta.singular ?? titleCaseSlug(k), broken: !ko };
+					})
 			}
 		: null;
 
@@ -363,6 +371,7 @@ export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor')
 		'tags',
 		'relations',
 		'kind',
+		'kinds',
 		'class',
 		'language',
 		'code',
@@ -396,11 +405,13 @@ export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor')
 		const schemas = graph.propertyRegistry().get(propId);
 		if (!schemas || schemas.length === 0) return undefined;
 		const kindRegistry = graph.kindRegistry();
-		let cur: string | null = typeof entity.meta.kind === 'string' ? entity.meta.kind : null;
 		const ancestry = new Set<string>();
-		while (cur) {
-			ancestry.add(cur);
-			cur = kindRegistry.get(cur)?.parent ?? null;
+		for (const k of kindsOf(entity.meta)) {
+			let cur: string | null = k;
+			while (cur) {
+				ancestry.add(cur);
+				cur = kindRegistry.get(cur)?.parent ?? null;
+			}
 		}
 		return schemas.find((s) => ancestry.has(s.declaringKind)) ?? schemas[0];
 	}

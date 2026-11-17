@@ -1,5 +1,5 @@
 import { graph } from '#lib/server/graph.js';
-import { relationLabel } from '#lib/types.js';
+import { kindsOf, relationLabel } from '#lib/types.js';
 import { error } from '@sveltejs/kit';
 
 export interface RelationEdge {
@@ -80,11 +80,14 @@ export async function load({ params }: { params: { kind: string } }): Promise<Re
 		const sourcesWithRelation = new Set(edges.map(e => e.source.id));
 
 		for (const entity of graph.all()) {
-			const entityKind = typeof entity.meta.kind === 'string' ? entity.meta.kind : null;
-			if (!entityKind) continue;
-			const entityAncestors = ancestors(entityKind);
-			const satisfiesDomain = domain.some(d => entityAncestors.has(d));
+			const entityKinds = kindsOf(entity.meta);
+			if (entityKinds.length === 0) continue;
+			const satisfiesDomain = entityKinds.some((k) => {
+				const entityAncestors = ancestors(k);
+				return domain.some((d) => entityAncestors.has(d));
+			});
 			if (!satisfiesDomain) continue;
+			const entityKind = entityKinds[0];
 			if (sourcesWithRelation.has(entity.id)) continue;
 			missing.push({
 				entityId: entity.id,

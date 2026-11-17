@@ -1,5 +1,5 @@
 import { graph } from '#lib/server/graph.js';
-import { titleCaseSlug } from '#lib/types.js';
+import { kindsOf, titleCaseSlug } from '#lib/types.js';
 import type { ClusterScope } from '#lib/cluster.js';
 
 export interface KindNode {
@@ -60,9 +60,7 @@ export function loadKindsIndexPage(scope: ClusterScope): KindsIndexPageData {
 		const family = kindFamily(kind);
 		const count = graph
 			.all()
-			.filter(
-				(e) => typeof e.meta.kind === 'string' && family.has(e.meta.kind) && inScope(e.id)
-			).length;
+			.filter((e) => kindsOf(e.meta).some((k) => family.has(k)) && inScope(e.id)).length;
 
 		// In a scope, drop kinds with no attestation in the family.
 		// At the root of a scoped tree, family-rollup ensures
@@ -128,11 +126,11 @@ export function loadKindsIndexPage(scope: ClusterScope): KindsIndexPageData {
 	// in-scope entities.
 	const unregisteredCounts = new Map<string, number>();
 	for (const e of graph.all()) {
-		const k = e.meta.kind;
-		if (typeof k !== 'string' || !k) continue;
-		if (registry.has(k)) continue;
 		if (!inScope(e.id)) continue;
-		unregisteredCounts.set(k, (unregisteredCounts.get(k) ?? 0) + 1);
+		for (const k of kindsOf(e.meta)) {
+			if (registry.has(k)) continue;
+			unregisteredCounts.set(k, (unregisteredCounts.get(k) ?? 0) + 1);
+		}
 	}
 	const unregistered = [...unregisteredCounts.entries()]
 		.map(([kind, count]) => ({ kind, count }))

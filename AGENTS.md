@@ -204,6 +204,17 @@ requiring a separate `_collection.yaml` file.
 - `toRoman(n)` in `src/lib/types.ts` converts an integer to a Roman
   numeral string; use it wherever `rankDisplay === 'roman'`.
 
+## Multi-kinded entities
+
+`kind:` may be a list (`kind: [temple-complex, city]`); the first entry is the
+primary kind. The walker normalises it to `meta.kind` (primary, string) plus
+`meta.kinds` (all). Anything that grants capability by kind — relation
+domain/codomain, property scope, `class` constraints, kind pages, collection
+filters, search, `eraBounded` — must go through `kindsOf(meta)` from
+`#lib/types.js` rather than reading `meta.kind`. `meta.kind` is for singular
+presentation only (card eyebrow, graph colour, parent-page grouping). Contract
+and rules: `ONTOLOGY.md`.
+
 ## Sections, dictionaries and glossed text
 
 Reference-heavy entities (a conlang's grammar, say) are supported by

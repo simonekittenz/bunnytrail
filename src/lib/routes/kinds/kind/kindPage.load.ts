@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 import { graph, byRankThenName } from '#lib/server/graph.js';
 import { inverseLabelFor } from '#lib/server/kindLinkLabels.js';
 import { renderSummary } from '#lib/server/markdown.js';
-import type { Entity } from '#lib/types.js';
+import { kindsOf, type Entity } from '#lib/types.js';
 import type { ClusterScope } from '#lib/cluster.js';
 
 export interface KindCard {
@@ -119,7 +119,7 @@ export function loadKindPage(kindId: string, scope: ClusterScope): KindPageData 
 	const family = kindFamily(kindId);
 	const direct = graph
 		.all()
-		.filter((e) => typeof e.meta.kind === 'string' && family.has(e.meta.kind) && inScope(e.id))
+		.filter((e) => kindsOf(e.meta).some((k) => family.has(k)) && inScope(e.id))
 		.sort(byRankThenName)
 		.map(toCard);
 
@@ -199,7 +199,7 @@ function buildKindSlice(
 		const family = kindFamily(kindId);
 		return graph
 			.all()
-			.filter((e) => typeof e.meta.kind === 'string' && family.has(e.meta.kind) && inScope(e.id))
+			.filter((e) => kindsOf(e.meta).some((k) => family.has(k)) && inScope(e.id))
 			.length;
 	};
 

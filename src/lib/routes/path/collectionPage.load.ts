@@ -259,6 +259,7 @@ export async function loadCollectionPage(path: string) {
 				tags: [],
 				era: null,
 				kind: null,
+				kinds: [],
 				classId: null,
 				className: null,
 				classHref: null,

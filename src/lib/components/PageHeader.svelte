@@ -22,6 +22,8 @@
 		 * rather than a kind page.
 		 */
 		href?: string;
+		/** Further kinds of a multi-kinded entity, rendered after the primary chip. */
+		also?: Array<{ id: string; label: string; broken?: boolean }>;
 	}
 
 	interface Props {
@@ -179,6 +181,15 @@
 				title={kindChip.broken ? `unregistered kind: ${kindChip.id}` : undefined}
 				>{kindChip.label}</a
 			>
+			{#each kindChip.also ?? [] as extra (extra.id)}
+				<a
+					class="kind-chip"
+					href={`/kinds/${extra.id}`}
+					data-broken={extra.broken ? 'true' : undefined}
+					title={extra.broken ? `unregistered kind: ${extra.id}` : undefined}
+					>{extra.label}</a
+				>
+			{/each}
 		{/if}
 		{#if titleChips && titleChips.length > 0}
 			{#each titleChips as chip (chip.href)}

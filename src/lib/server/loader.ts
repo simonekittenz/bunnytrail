@@ -1,6 +1,7 @@
 import { readdir } from 'node:fs/promises';
 import type { Dirent } from 'node:fs';
 import type { Edge, Entity, EntityId, EntityType, EraConfig, HealthIssue, Kind, Ontology, Collection, PropertyRegistry, RelationRegistry, Timeline } from '#lib/types.js';
+import { kindsOf } from '#lib/types.js';
 import type { CustomCalendarsConfig } from './world';
 import { loadKindRegistry } from './kinds';
 import { CONTENT_DIR } from './globals';
@@ -235,8 +236,7 @@ function applyEraDefaults(
 		// Skip entities that already have an era.
 		if (entity.meta.era !== undefined) continue;
 		// Skip entities with no kind, or whose kind is not era-bounded.
-		const kindId = typeof entity.meta.kind === 'string' ? entity.meta.kind : undefined;
-		if (!isEraBounded(kindId)) continue;
+		if (!kindsOf(entity.meta).some((k) => isEraBounded(k))) continue;
 		// Determine the cluster from the entity id (first path segment).
 		const cluster = entity.id.split('/')[0];
 		if (!cluster) continue;
