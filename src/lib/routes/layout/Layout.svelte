@@ -269,7 +269,8 @@
 
 		if (target.href === nav.to.url.href) return;
 		nav.cancel();
-		goto(target.href, { reset: false });
+		// Only keep scroll/focus when just the query changed; a new page starts at the top.
+		goto(target.href, { reset: target.pathname !== nav.from?.url.pathname });
 	});
 
 	function switchCluster(value: string) {
