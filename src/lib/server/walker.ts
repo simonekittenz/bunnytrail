@@ -19,6 +19,7 @@ import type {
 	TimelineEntry,
 	TimelineMeta
 } from '#lib/types.js';
+import { compareTimelineEntries } from '#lib/types.js';
 import type { CustomCalendarsConfig } from './world';
 import { calendarDateFromRaw, parseCalendarDate, toAbsoluteDay } from '#lib/calendar.js';
 import { splitFrontmatter } from './frontmatter';
@@ -823,21 +824,34 @@ async function walkTimelinesDir(
 					year = typeof childMeta.year === 'number' ? childMeta.year : folderYear;
 				}
 
-				// If neither a calendar date nor an explicit year resolved, and the
-				// folder name is non-numeric, skip — NaN sort key breaks ordering.
-				if (!calendarDate && isNaN(year)) continue;
+				// No calendar date and no year: the entry is *undated*. A numeric
+				// `rank:` still gives it a place in the sequence (its sort key);
+				// without one a NaN key would break ordering, so skip it.
+				const rank =
+					typeof childMeta.rank === 'number' && Number.isFinite(childMeta.rank)
+						? childMeta.rank
+						: undefined;
+				const undated = !calendarDate && isNaN(year);
+				if (undated) {
+					if (rank === undefined) continue;
+					year = rank;
+				}
 
 				const childRelPath = relPath ? `${relPath}/${childName}` : childName;
 				entries.push({
 					path: childRelPath,
 					year,
 					...(calendarDate ? { calendarDate } : {}),
+					...(undated ? { undated: true } : {}),
+					...(rank !== undefined ? { rank } : {}),
 					summary: typeof childMeta.summary === 'string' ? childMeta.summary : undefined,
+					name: typeof childMeta.name === 'string' && childMeta.name.trim() ? childMeta.name.trim() : undefined,
+					status: typeof childMeta.status === 'string' && childMeta.status.trim() ? childMeta.status.trim() : undefined,
 					body: childSplit.body,
 					mdPath: childTimeMdPath
 				});
 			}
-			entries.sort((a, b) => a.year - b.year);
+			entries.sort(compareTimelineEntries);
 			const rawTarget = (meta as { target?: unknown }).target;
 			const targets: string[] = Array.isArray(rawTarget)
 				? rawTarget.filter((t): t is string => typeof t === 'string')

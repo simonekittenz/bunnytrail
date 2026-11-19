@@ -3,6 +3,7 @@ import { world } from '#lib/server/world.js';
 import { renderBody, renderSummary } from '#lib/server/markdown.js';
 import { inlineSvgFigures } from '#lib/server/inlineSvgs.js';
 import { formatCalendarDateById, formatCalendarRange } from '#lib/calendar.js';
+import { formatRank, undatedEntryTitle } from '#lib/types.js';
 
 export interface TimelineEntryCard {
 	/** Folder path, e.g. `leemburg/verhalen/jan-arend-jr/1954`. */
@@ -24,6 +25,12 @@ export interface TimelineEntryCard {
 	/** Rendered summary HTML (from `meta.summary`), or null. */
 	summaryHtml: string | null;
 	href: string;
+	/** True when the entry has a rank but no date; `label` is then its name. */
+	undated: boolean;
+	/** Rank glyph for an undated entry per the line's `rankDisplay`, else null. */
+	ordinal: string | null;
+	/** Free-form status such as `prophesied`, shown as a chip; else null. */
+	status: string | null;
 }
 
 export interface ChildTimelineCard {
@@ -92,8 +99,9 @@ export async function loadTimelinePage(timelinePath: string): Promise<TimelinePa
 		const slug = entry.path.includes('/')
 			? entry.path.slice(entry.path.lastIndexOf('/') + 1)
 			: entry.path;
-		const label =
-			entry.calendarDate && customCalendars?.calendars
+		const label = entry.undated
+			? undatedEntryTitle(entry)
+			: entry.calendarDate && customCalendars?.calendars
 				? formatCalendarDateById(entry.calendarDate, customCalendars.calendars, 'heading')
 				: String(entry.year);
 		return {
@@ -102,7 +110,13 @@ export async function loadTimelinePage(timelinePath: string): Promise<TimelinePa
 			label,
 			slug,
 			summaryHtml,
-			href: `/${timelinePath}/${slug}?thread=${encodeURIComponent(timelinePath)}`
+			href: `/${timelinePath}/${slug}?thread=${encodeURIComponent(timelinePath)}`,
+			undated: !!entry.undated,
+			ordinal:
+				entry.undated && entry.rank !== undefined
+					? formatRank(entry.rank, timeline.meta.rankDisplay) || null
+					: null,
+			status: entry.status ?? null
 		};
 	});
 
@@ -143,6 +157,15 @@ export async function loadTimelinePage(timelinePath: string): Promise<TimelinePa
 					.filter((t): t is { label: string; href: string } => t !== null)
 			};
 		});
+
+	// Ranked sub-timelines come first, by rank; the rest keep folder order.
+	// (Deliberately not sorted by date: periods without entries have none.)
+	childTimelines.sort((a, b) => {
+		const ra = graph.timeline(a.path)?.meta.rank;
+		const rb = graph.timeline(b.path)?.meta.rank;
+		if (ra === undefined || rb === undefined) return ra === undefined ? (rb === undefined ? 0 : 1) : -1;
+		return ra - rb;
+	});
 
 	// Summary HTML.
 	const summaryHtml = timeline.meta.summary

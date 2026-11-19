@@ -6,8 +6,8 @@ import { extractHeadings, parseTocSetting, resolveToc } from '#lib/server/toc.js
 import { hasProse } from '#lib/server/prose.js';
 import { resolveListenTemplate } from '#lib/listen.js';
 import { makeCollectionResolver, renderEntityBody, renderSummary } from '#lib/server/markdown.js';
-import { formatCalendarRange } from '#lib/calendar.js';
-import { kindsOf, titleCaseSlug, toRoman, relationLabel, type Entity, type RankDisplay, type VocabEntry } from '#lib/types.js';
+import { formatCalendarDateById, formatCalendarRange } from '#lib/calendar.js';
+import { kindsOf, titleCaseSlug, toRoman, undatedEntryTitle, relationLabel, type Entity, type RankDisplay, type VocabEntry } from '#lib/types.js';
 import type { ViewMode } from '#lib/cluster.js';
 import { buildSectionNav, folderBreadcrumbs } from './subpage';
 
@@ -164,17 +164,26 @@ export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor')
 		let fromEntity = pickCard(graph.get(e.from), cardSummaryHtml);
 		// e.from may be a timeline dot path (e.g. `leemburg/verhalen/jan-arend-jr/1956`).
 		// Those aren't entities so graph.get returns undefined — synthesise a card instead.
-		if (!fromEntity && graph.isTimelineEntryPath(e.from)) {
+		const timelineEntry = fromEntity ? undefined : graph.timelineEntry(e.from);
+		if (!fromEntity && timelineEntry) {
 			const lastSlash = e.from.lastIndexOf('/');
 			const timelinePath = e.from.slice(0, lastSlash);
-			const year = e.from.slice(lastSlash + 1);
+			const slug = e.from.slice(lastSlash + 1);
 			const tl = graph.timeline(timelinePath);
 			const tlTitle = tl?.meta.name ?? graph.get(timelinePath)?.meta.name ?? timelinePath.split('/').pop()!;
+			// What the entry is called: its title when undated, its formatted
+			// calendar date when it has one, else the year / folder name.
+			const calendars = world.config().customCalendars?.calendars;
+			const entryLabel = timelineEntry.undated
+				? undatedEntryTitle(timelineEntry)
+				: timelineEntry.calendarDate && calendars
+					? formatCalendarDateById(timelineEntry.calendarDate, calendars, 'heading')
+					: slug;
 			fromEntity = {
 				id: e.from,
 				type: timelinePath,
-				slug: year,
-				name: `${year} · ${tlTitle}`,
+				slug,
+				name: `${entryLabel} · ${tlTitle}`,
 				summary: null,
 				summaryHtml: null,
 				sigil: null,

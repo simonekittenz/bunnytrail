@@ -76,6 +76,10 @@
 	<div class="dot-subthread"><a class="dot-subthread__link" href={data.subThread.href}>{data.subThread.title}</a></div>
 {/if}
 
+{#if data.status}
+	<p class="dot-status" data-status={data.status}>{data.status}</p>
+{/if}
+
 {#if data.summaryHtml}
 	<p class="dot-summary">
 		<!-- trusted: server-rendered summary from the engine pipeline -->
@@ -340,6 +344,17 @@
 		font-style: italic;
 		font-size: var(--text-base);
 		color: var(--ink-soft);
+		text-align: center;
+	}
+
+	.dot-status {
+		max-width: var(--prose-w, 48rem);
+		margin: var(--space-3) auto 0;
+		font-family: var(--font-serif);
+		font-size: var(--text-sm);
+		font-variant-caps: all-small-caps;
+		letter-spacing: 0.1em;
+		color: var(--accent-deep);
 		text-align: center;
 	}
 

@@ -252,6 +252,36 @@ Entries on different calendars within the same timeline are sorted
 independently by their own calendar's fold. Cross-calendar sort
 normalisation is not currently supported.
 
+### Undated entries
+
+A mythological or otherwise undated sequence has an order but no dates.
+A dot with a numeric `rank:` and **no** `year:` or `date:` is *undated*:
+
+```yaml
+# thallic-ages/_time.md
+type: line
+name: Mythological Ages of the Thallic Tradition
+rankDisplay: roman        # arabic (default) | roman | none
+
+# thallic-ages/6-great-reunion/_time.md
+type: dot
+name: Great Reunion       # an undated entry's title; falls back to the folder name
+rank: 6
+status: prophesied        # optional free-form chip: present, prophesied, …
+summary: A future reconciliation anticipated in certain prophetic traditions.
+```
+
+- Undated entries sort **after** dated ones, ascending by `rank`
+  (`compareTimelineEntries` in `types.ts`); folder names don't matter.
+- The list shows the `name` where a date would be, with the rank glyph
+  per the line's `rankDisplay`. `status` renders as a chip with a
+  `data-status` hook for theming.
+- They never count towards a timeline's year or date range, and they
+  carry no calendar. Don't mix them into a calendared line.
+- A non-numeric folder with no `year`, `date` or `rank` is still skipped.
+- `rank:` on a nested `type: period` line orders sibling sub-timelines
+  (ranked first, the rest in folder order).
+
 ---
 
 ## Multiple calendars

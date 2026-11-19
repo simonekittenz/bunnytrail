@@ -63,10 +63,14 @@
 	<div class="timeline">
 		{#each data.entries as entry (entry.path)}
 			<article class="timeline-entry">
-				<span class="timeline-year">
+				<span class="timeline-year" class:timeline-year--named={entry.undated}>
+					{#if entry.ordinal}<span class="entry-ordinal" aria-hidden="true">{entry.ordinal}</span>{/if}
 					<!-- Stretched link covers the whole tile -->
 					<a class="entry-link" href={entry.href}>{entry.label}</a>
 				</span>
+				{#if entry.status}
+					<span class="timeline-status" data-status={entry.status}>{entry.status}</span>
+				{/if}
 				{#if entry.summaryHtml}
 					<div class="timeline-summary">
 						<!-- trusted: server-rendered markdown from the engine pipeline -->
@@ -198,6 +202,31 @@
 		line-height: 1;
 		/* Colour inherits from .entry-link so the gleam animation
 		   applies; don't set color here. */
+	}
+
+	/* Undated entries show a name where a date would be; a full-size
+	   year heading would be far too large for it. */
+	.timeline-year--named {
+		font-size: var(--text-2xl);
+		line-height: 1.15;
+	}
+
+	.entry-ordinal {
+		margin-right: 0.5em;
+		color: var(--accent-deep);
+		font-size: 0.6em;
+		letter-spacing: 0.08em;
+		vertical-align: 0.15em;
+	}
+
+	.timeline-status {
+		display: inline-block;
+		margin-top: var(--space-2);
+		font-family: var(--font-serif);
+		font-size: var(--text-sm);
+		font-variant-caps: all-small-caps;
+		letter-spacing: 0.1em;
+		color: var(--accent-deep);
 	}
 
 	/* Stretched link covers the entire tile — same technique as

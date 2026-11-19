@@ -1135,10 +1135,29 @@ export interface TimelineMeta {
 	 * Cannot be combined with a plain integer `year` on the same dot.
 	 */
 	date?: unknown;
-	/** Optional display name for a line timeline (appears in the header). */
+	/**
+	 * Display name. On a line it appears in the header; on a dot with no
+	 * `year`/`date` (an *undated* entry) it is the entry's title.
+	 */
 	name?: string;
 	/** Optional one-line summary shown below the title. */
 	summary?: string;
+	/**
+	 * Position in an undated sequence. A dot with a `rank` but no `year` or
+	 * `date` is *undated*: it sorts after every dated entry, by rank. On a
+	 * nested line (period) it orders sibling sub-timelines instead.
+	 */
+	rank?: number;
+	/**
+	 * On a line: how undated entries' ranks are shown (`arabic` by default,
+	 * `roman`, or `none`). Same meaning as on collections.
+	 */
+	rankDisplay?: RankDisplay;
+	/**
+	 * Optional free-form status of an entry, e.g. `prophesied`. Rendered as
+	 * a small chip, with a `data-status` hook for theming.
+	 */
+	status?: string;
 	/**
 	 * One or more entity paths this timeline is about.
 	 * Authored as a single string or a list in frontmatter.
@@ -1171,6 +1190,18 @@ export interface TimelineEntry {
 	calendarDate?: import('./calendar').CalendarDate;
 	/** Optional one-line summary from the dot's `_time.md` frontmatter. */
 	summary?: string;
+	/** Title from the dot's `name:` — what an undated entry is called. */
+	name?: string;
+	/**
+	 * True for an entry with a `rank` but no `year` or `date`. Its `year` then
+	 * just mirrors `rank` as a sort key and must not be shown or ranged as a
+	 * year. Order entries with `compareTimelineEntries`.
+	 */
+	undated?: boolean;
+	/** The authored `rank:`, when present. */
+	rank?: number;
+	/** The authored `status:`, when present (e.g. `prophesied`). */
+	status?: string;
 	/** Raw markdown body (empty string when no prose was authored). */
 	body: string;
 	/** Absolute disk path to the `_time.md` file (for diagnostics). */
@@ -1197,6 +1228,31 @@ export interface Timeline {
 	 * Derived from `meta.target` (single string or array). Empty when unset.
 	 */
 	targets: string[];
+}
+
+/**
+ * Order timeline entries: dated entries first, ascending by `year`, then
+ * undated ones ascending by `rank`. Ties keep their input order (stable sort).
+ */
+export function compareTimelineEntries(
+	a: Pick<TimelineEntry, 'year' | 'undated'>,
+	b: Pick<TimelineEntry, 'year' | 'undated'>
+): number {
+	if (!!a.undated !== !!b.undated) return a.undated ? 1 : -1;
+	return a.year - b.year;
+}
+
+/** What an undated entry is called: its `name:`, else its folder slug humanised. */
+export function undatedEntryTitle(entry: Pick<TimelineEntry, 'name' | 'path'>): string {
+	if (entry.name) return entry.name;
+	const leaf = entry.path.slice(entry.path.lastIndexOf('/') + 1);
+	return titleCaseSlug(leaf.replace(/^\d+-/, ''));
+}
+
+/** A rank glyph per `rankDisplay`; empty when it is `none`. */
+export function formatRank(rank: number, display: RankDisplay = 'arabic'): string {
+	if (display === 'none') return '';
+	return display === 'roman' ? toRoman(rank) : String(rank);
 }
 
 // ── Vocabulary ────────────────────────────────────────────────────────────────

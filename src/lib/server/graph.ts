@@ -11,6 +11,7 @@ import type {
 	PropertyRegistry,
 	RelationRegistry,
 	Timeline,
+	TimelineEntry,
 	VocabEntry
 } from '#lib/types.js';
 import { folderLabels, kindsOf, titleCaseSlug } from '#lib/types.js';
@@ -444,6 +445,8 @@ export class Graph {
 		for (const [p, tl] of this.#timelines) {
 			if (p !== path && !p.startsWith(childPrefix)) continue;
 			for (const entry of tl.entries) {
+				// An undated entry's `year` is only a sort key, not a date.
+				if (entry.undated) continue;
 				if (min === null || entry.year < min) {
 					min = entry.year;
 					firstCalendarDate = entry.calendarDate ?? null;
@@ -470,21 +473,22 @@ export class Graph {
 	}
 
 	/**
-	 * True if `path` is a timeline entry (dot) folder — i.e. it is a
-	 * year-named sub-folder of a known timeline line. Used by the
-	 * entity-assets handler to allow sibling image serving for timeline
+	 * True if `path` is a timeline entry (dot) folder — i.e. a sub-folder of
+	 * a known timeline line that was loaded as one of its entries. The folder
+	 * may be year-named (`1954`) or named freely (`4-fall-of-zaohr`). Used by
+	 * the entity-assets handler to allow sibling image serving for timeline
 	 * entry folders that are not entities or collections.
 	 */
 	isTimelineEntryPath(path: string): boolean {
-		// `path` looks like `<timelinePath>/<year>`. Extract the parent.
+		return this.timelineEntry(path) !== undefined;
+	}
+
+	/** The loaded entry (dot) at `path`, or undefined. */
+	timelineEntry(path: string): TimelineEntry | undefined {
 		const lastSlash = path.lastIndexOf('/');
-		if (lastSlash < 0) return false;
-		const parent = path.slice(0, lastSlash);
-		const leaf = path.slice(lastSlash + 1);
-		if (!/^-?\d+$/.test(leaf)) return false;
-		const timeline = this.#timelines.get(parent);
-		if (!timeline) return false;
-		return timeline.entries.some((e) => e.path === path);
+		if (lastSlash < 0) return undefined;
+		const timeline = this.#timelines.get(path.slice(0, lastSlash));
+		return timeline?.entries.find((e) => e.path === path);
 	}
 
 	// ---------------------------------------------------------------------

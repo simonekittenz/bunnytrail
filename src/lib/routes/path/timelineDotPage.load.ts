@@ -3,7 +3,12 @@ import { world } from '#lib/server/world.js';
 import { renderBody, renderSummary } from '#lib/server/markdown.js';
 import { inlineSvgFigures } from '#lib/server/inlineSvgs.js';
 import { formatCalendarDateById } from '#lib/calendar.js';
-import type { TimelineEntry } from '#lib/types.js';
+import {
+	compareTimelineEntries,
+	formatRank,
+	undatedEntryTitle,
+	type TimelineEntry
+} from '#lib/types.js';
 
 export interface TimelineDotPageData {
 	kind: 'timeline-dot';
@@ -26,6 +31,12 @@ export interface TimelineDotPageData {
 	prev: { label: string; href: string; crossThread: { title: string; href: string } | null } | null;
 	/** Navigation to the next dot (higher year), or null. */
 	next: { label: string; href: string; crossThread: { title: string; href: string } | null } | null;
+	/** True for an undated entry: `label` is its name rather than a date. */
+	undated: boolean;
+	/** Rank glyph of an undated entry per the line's `rankDisplay`, else null. */
+	ordinal: string | null;
+	/** Free-form status such as `prophesied`, shown as a chip; else null. */
+	status: string | null;
 	/** Link back to the timeline line page. */
 	timelineHref: string;
 	/** Breadcrumb chain. */
@@ -48,7 +59,7 @@ function threadEntries(threadPath: string): TimelineEntry[] {
 		if (p !== threadPath && !p.startsWith(childPrefix)) continue;
 		all.push(...tl.entries);
 	}
-	all.sort((a, b) => a.year - b.year || a.path.localeCompare(b.path));
+	all.sort((a, b) => compareTimelineEntries(a, b) || a.path.localeCompare(b.path));
 	return all;
 }
 
@@ -79,6 +90,7 @@ export async function loadTimelineDotPage(
 
 	/** Format an entry's sort key as a display label. */
 	function entryLabel(e: TimelineEntry, variant: 'heading' | 'display' = 'display'): string {
+		if (e.undated) return undatedEntryTitle(e);
 		if (e.calendarDate && customCalendars?.calendars) {
 			return formatCalendarDateById(e.calendarDate, customCalendars.calendars, variant);
 		}
@@ -143,7 +155,6 @@ export async function loadTimelineDotPage(
 		return `/${e.path}${qs}`;
 	}
 
-	const year = entry.year;
 	let parentThreadBack: { label: string; href: string } | null = null;
 	let parentThreadForward: { label: string; href: string } | null = null;
 	if (validThread && validThread === timelinePath) {
@@ -155,13 +166,15 @@ export async function loadTimelineDotPage(
 			const qs = `?thread=${encodeURIComponent(parentPath)}`;
 			const parentEntries = threadEntries(parentPath);
 			if (prev === null) {
-				const predecessor = [...parentEntries].reverse().find((e) => e.year < year);
+				const predecessor = [...parentEntries]
+					.reverse()
+					.find((e) => compareTimelineEntries(e, entry) < 0);
 				if (predecessor) {
 					parentThreadBack = { label: parentTitle, href: `/${predecessor.path}${qs}` };
 				}
 			}
 			if (next === null) {
-				const successor = parentEntries.find((e) => e.year > year);
+				const successor = parentEntries.find((e) => compareTimelineEntries(e, entry) > 0);
 				if (successor) {
 					parentThreadForward = { label: parentTitle, href: `/${successor.path}${qs}` };
 				}
@@ -186,6 +199,12 @@ export async function loadTimelineDotPage(
 		next: next
 			? { label: entryLabel(next, 'heading'), href: neighbourHref(next, validThread), crossThread: crossThread(next) }
 			: null,
+		undated: !!entry.undated,
+		ordinal:
+			entry.undated && entry.rank !== undefined
+				? formatRank(entry.rank, timeline.meta.rankDisplay) || null
+				: null,
+		status: entry.status ?? null,
 		timelineHref: `/${timelinePath}`,
 		breadcrumbs,
 		thread: validThread,
