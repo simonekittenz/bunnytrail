@@ -88,7 +88,10 @@ export async function load({ params, url }: { params: { path: string }; url: URL
 
 	const entity = graph.get(path);
 	if (entity) {
-		return { kind: 'entity' as const, ...(await loadEntityPage(entity, mode)) };
+		return {
+			kind: 'entity' as const,
+			...(await loadEntityPage(entity, mode, searchParams.get('thread') ?? null))
+		};
 	}
 
 	// Timeline dot dispatch: `<timeline-path>/<slug>` where the path is a

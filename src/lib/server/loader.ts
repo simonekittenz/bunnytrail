@@ -5,7 +5,7 @@ import { kindsOf } from '#lib/types.js';
 import type { CustomCalendarsConfig } from './world';
 import { loadKindRegistry } from './kinds';
 import { CONTENT_DIR } from './globals';
-import { walk, walkTimelines, readDirents } from './walker';
+import { walk, walkTimelines, timelineDotEntities, readDirents } from './walker';
 import { extractWikilinks, resolveWikilink } from './wikilinks';
 import {
 	deriveClusterSets,
@@ -134,6 +134,10 @@ export async function loadAll(
 
 	// Walk timelines: discover _time.md files across the content tree.
 	const timelines = await walkTimelines(contentDir, issues, opts.customCalendars ?? null);
+
+	// A timeline dot that declares a `kind:` is also an entity, so it takes
+	// part in relations, backlinks, kind pages, search and validation.
+	for (const [id, dot] of timelineDotEntities(timelines, entities, issues)) entities.set(id, dot);
 
 	// Resolve children: for every entity whose `parent` is set, push its
 	// id onto the parent's `children` array. Done in a second pass so
@@ -299,6 +303,8 @@ export function buildEdges(
 		for (const tl of timelines.values()) {
 			const fromCluster = tl.path.includes('/') ? tl.path.split('/')[0] : tl.path;
 			for (const entry of tl.entries) {
+				// A dot that is an entity already got its wikilink edges above.
+				if (entities.has(entry.path)) continue;
 				if (!entry.body.trim()) continue;
 				for (const raw of extractWikilinks(entry.body)) {
 					const r = resolveWikilink(raw, entities, fromCluster, clusterSet, universalSet);

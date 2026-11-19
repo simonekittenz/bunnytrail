@@ -282,6 +282,39 @@ summary: A future reconciliation anticipated in certain prophetic traditions.
 - `rank:` on a nested `type: period` line orders sibling sub-timelines
   (ranked first, the rest in folder order).
 
+### Dots as entities
+
+A dot that declares a `kind:` is **also an entity**, with the dot's path as
+its id. It takes everything an entity does: `relations`, `tags`, `aliases`,
+`era`, `properties`, a multi-kind list, backlinks, kind pages, search, the
+graph, and relation-schema validation. A dot without `kind:` stays a plain
+dot (so existing timelines are unaffected).
+
+```yaml
+# bajurindan-ages/the-drowning/_time.md
+type: dot
+kind: event
+name: The Drowning
+rank: 3
+era: mythic
+relations:
+  - kind: temporal/happened-on
+    target: aurethia/places/in-the-void/aureth-system/bayurinda
+  - kind: temporal/occurred-in
+    target: aurethia/history/timelines/bajurindan-ages/age-of-kush
+```
+
+- The timeline-only keys (`type`, `year`, `date`, `calendar`, `target`,
+  `rankDisplay`) stay on the timeline and never reach the entity. `rank` and
+  `status` are shared.
+- The dot's URL renders the full entity page with the previous · current ·
+  next strip above it (`TimelineDotNav.svelte`). For an undated dot the strip
+  shows its rank glyph, since the name is already the heading.
+- Name the folder after the slug (`the-drowning`, not `3-the-drowning`) so
+  `[[the-drowning]]` resolves like any entity; `rank` carries the order.
+- Slug wikilinks stay cluster-scoped, as for any entity. A dot whose path
+  is already an entity is reported and skipped.
+
 ---
 
 ## Multiple calendars

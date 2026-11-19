@@ -157,6 +157,8 @@ export class Graph {
 	#clusters: Set<string> = new Set();
 	#universalFolders: Set<string> = new Set();
 	#timelines: Map<string, Timeline> = new Map();
+	/** Ids of entities that are timeline dots; folder listings skip them. */
+	#dotEntityIds: Set<EntityId> = new Set();
 	#loaded = false;
 	#loading: Promise<void> | null = null;
 	/** Monotonically incrementing counter; bumped after every successful load(). */
@@ -208,6 +210,13 @@ export class Graph {
 			this.#clusters = clusters;
 			this.#universalFolders = universalFolders;
 			this.#timelines = timelines;
+			this.#dotEntityIds = new Set(
+				[...timelines.values()].flatMap((tl) =>
+					tl.entries
+						.filter((e) => e.entityMeta && entities.get(e.path)?.mdPath === e.mdPath)
+						.map((e) => e.path)
+				)
+			);
 			this.#loaded = true;
 		// Invalidate lazy indices so a dev-mode reload rebuilds them
 		// against the fresh entity set.
@@ -524,19 +533,24 @@ export class Graph {
 		return false;
 	}
 
-	/** Direct entities of a folder: id is exactly `${path}/${slug}` (no deeper). */
+	/**
+	 * Direct entities of a folder: id is exactly `${path}/${slug}` (no deeper).
+	 * Timeline dots that are entities are left out: their timeline presents
+	 * them, so a folder listing would only show them twice.
+	 */
 	byFolder(path: string): Entity[] {
 		const prefix = `${path}/`;
 		return this.all().filter((e) => {
 			if (!e.id.startsWith(prefix)) return false;
+			if (this.#dotEntityIds.has(e.id)) return false;
 			return !e.id.slice(prefix.length).includes('/');
 		});
 	}
 
-	/** Entities at any depth under a folder. */
+	/** Entities at any depth under a folder (timeline dots excluded, as in `byFolder`). */
 	byFolderRecursive(path: string): Entity[] {
 		const prefix = `${path}/`;
-		return this.all().filter((e) => e.id.startsWith(prefix));
+		return this.all().filter((e) => e.id.startsWith(prefix) && !this.#dotEntityIds.has(e.id));
 	}
 
 	/**
@@ -561,6 +575,9 @@ export class Graph {
 		// A path that exactly equals an entity is not a folder; remove.
 		const out: string[] = [];
 		for (const candidate of seen) {
+			// A timeline line is shown as a timeline card, not a sub-collection,
+			// even when its dots are entities (unless the folder is an entity too).
+			if (this.#timelines.has(candidate) && !this.#entities.has(candidate)) continue;
 			// Must have descendants or a collection marker. The candidate
 			// itself being an entity id doesn't disqualify — an entity
 			// folder may also act as a container if it has children.

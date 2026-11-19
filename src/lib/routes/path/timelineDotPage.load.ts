@@ -7,45 +7,24 @@ import {
 	compareTimelineEntries,
 	formatRank,
 	undatedEntryTitle,
+	type TimelineDotNav,
 	type TimelineEntry
 } from '#lib/types.js';
 
-export interface TimelineDotPageData {
+export interface TimelineDotPageData extends TimelineDotNav {
 	kind: 'timeline-dot';
-	/** Path of the containing timeline (line), e.g. `leemburg/verhalen/jan-arend-jr`. */
-	timelinePath: string;
-	/** Display name of the timeline (for the nav header). */
-	timelineTitle: string;
-	/** Display label for this dot — formatted calendar date or plain year string. */
-	label: string;
-	/**
-	 * Secondary display-variant label, shown below the heading.
-	 * Null when the display variant is identical to the heading label.
-	 */
-	displayLabel: string | null;
 	/** Rendered HTML summary (may be null). */
 	summaryHtml: string | null;
 	/** Rendered HTML body of this entry (may be empty string). */
 	bodyHtml: string;
-	/** Navigation to the previous dot (lower year), or null. */
-	prev: { label: string; href: string; crossThread: { title: string; href: string } | null } | null;
-	/** Navigation to the next dot (higher year), or null. */
-	next: { label: string; href: string; crossThread: { title: string; href: string } | null } | null;
+	/** Breadcrumb chain. */
+	breadcrumbs: { label: string; href: string }[];
 	/** True for an undated entry: `label` is its name rather than a date. */
 	undated: boolean;
 	/** Rank glyph of an undated entry per the line's `rankDisplay`, else null. */
 	ordinal: string | null;
 	/** Free-form status such as `prophesied`, shown as a chip; else null. */
 	status: string | null;
-	/** Link back to the timeline line page. */
-	timelineHref: string;
-	/** Breadcrumb chain. */
-	breadcrumbs: { label: string; href: string }[];
-	thread: string | null;
-	threadTitle: string | null;
-	subThread: { title: string; href: string } | null;
-	parentThreadBack: { label: string; href: string } | null;
-	parentThreadForward: { label: string; href: string } | null;
 }
 
 /**
@@ -72,21 +51,26 @@ function resolveTimelineTitle(path: string): string {
 	return tl.meta.name ?? entity?.meta.name ?? leaf.replace(/-/g, ' ');
 }
 
-export async function loadTimelineDotPage(
+/** The rank glyph of an undated entry per its line's `rankDisplay`, else null. */
+function ordinalOf(entry: TimelineEntry, timelinePath: string): string | null {
+	if (!entry.undated || entry.rank === undefined) return null;
+	return formatRank(entry.rank, graph.timeline(timelinePath)?.meta.rankDisplay) || null;
+}
+
+/**
+ * Build the timeline strip for one dot. `entityTitled` is true when the page
+ * also shows the dot's own title as a heading (it is an entity): an undated
+ * dot's strip then shows its rank glyph instead of repeating the name.
+ */
+export async function buildDotNav(
 	timelinePath: string,
-	slug: string,
-	thread: string | null = null
-): Promise<TimelineDotPageData | null> {
-	await graph.ready();
-	const timeline = graph.timeline(timelinePath);
-	if (!timeline) return null;
-
-	const entryPath = `${timelinePath}/${slug}`;
-	const entry = timeline.entries.find((e) => e.path === entryPath);
-	if (!entry) return null;
-
+	entry: TimelineEntry,
+	thread: string | null,
+	entityTitled = false
+): Promise<TimelineDotNav> {
 	await world.ready();
 	const customCalendars = world.config().customCalendars;
+	const timeline = graph.timeline(timelinePath)!;
 
 	/** Format an entry's sort key as a display label. */
 	function entryLabel(e: TimelineEntry, variant: 'heading' | 'display' = 'display'): string {
@@ -97,26 +81,10 @@ export async function loadTimelineDotPage(
 		return String(e.year);
 	}
 
-	const resolveLink = (path: string) => graph.resolveLink(path, graph.clusterOf(timelinePath));
-	const languageCodes = graph.languageCodes();
-	const kindIds = graph.kindIds();
-
-	const bodyHtml = entry.body.trim()
-		? await inlineSvgFigures(
-				renderBody(entry.body, resolveLink, languageCodes, kindIds, undefined, entry.path)
-			)
-		: '';
-
-	const summaryHtml = entry.summary?.trim()
-		? renderSummary(entry.summary, resolveLink, languageCodes, { kindIds })
-		: null;
-
 	const validThread = thread && graph.isTimeline(thread) ? thread : null;
-	const sorted: TimelineEntry[] = validThread
-		? threadEntries(validThread)
-		: timeline.entries;
+	const sorted: TimelineEntry[] = validThread ? threadEntries(validThread) : timeline.entries;
 
-	const idx = sorted.findIndex((e) => e.path === entryPath);
+	const idx = sorted.findIndex((e) => e.path === entry.path);
 	const prev = idx > 0 ? sorted[idx - 1] : null;
 	const next = idx < sorted.length - 1 ? sorted[idx + 1] : null;
 
@@ -126,12 +94,6 @@ export async function loadTimelineDotPage(
 	const containingEntity = graph.get(timelinePath);
 	const timelineTitle =
 		timeline.meta.name ?? containingEntity?.meta.name ?? leaf.replace(/-/g, ' ');
-
-	const breadcrumbs: { label: string; href: string }[] = [];
-	if (containingEntity) {
-		breadcrumbs.push({ label: containingEntity.meta.name, href: `/${timelinePath}` });
-	}
-	breadcrumbs.push({ label: timelineTitle, href: `/${timelinePath}` });
 
 	const threadTitle = validThread ? resolveTimelineTitle(validThread) : null;
 	const subThread =
@@ -182,35 +144,76 @@ export async function loadTimelineDotPage(
 		}
 	}
 
-	const headingLabel = entryLabel(entry, 'heading');
-	const displayLabel = entryLabel(entry, 'display');
+	const headingLabel =
+		entityTitled && entry.undated
+			? (ordinalOf(entry, timelinePath) ?? entryLabel(entry, 'heading'))
+			: entryLabel(entry, 'heading');
+	const displayLabel = entityTitled && entry.undated ? headingLabel : entryLabel(entry, 'display');
 
 	return {
-		kind: 'timeline-dot',
 		timelinePath,
 		timelineTitle,
 		label: headingLabel,
 		displayLabel: displayLabel !== headingLabel ? displayLabel : null,
-		summaryHtml,
-		bodyHtml,
 		prev: prev
 			? { label: entryLabel(prev, 'heading'), href: neighbourHref(prev, validThread), crossThread: crossThread(prev) }
 			: null,
 		next: next
 			? { label: entryLabel(next, 'heading'), href: neighbourHref(next, validThread), crossThread: crossThread(next) }
 			: null,
-		undated: !!entry.undated,
-		ordinal:
-			entry.undated && entry.rank !== undefined
-				? formatRank(entry.rank, timeline.meta.rankDisplay) || null
-				: null,
-		status: entry.status ?? null,
 		timelineHref: `/${timelinePath}`,
-		breadcrumbs,
 		thread: validThread,
 		threadTitle,
 		subThread,
 		parentThreadBack,
 		parentThreadForward
+	};
+}
+
+export async function loadTimelineDotPage(
+	timelinePath: string,
+	slug: string,
+	thread: string | null = null
+): Promise<TimelineDotPageData | null> {
+	await graph.ready();
+	const timeline = graph.timeline(timelinePath);
+	if (!timeline) return null;
+
+	const entryPath = `${timelinePath}/${slug}`;
+	const entry = timeline.entries.find((e) => e.path === entryPath);
+	if (!entry) return null;
+
+	const resolveLink = (path: string) => graph.resolveLink(path, graph.clusterOf(timelinePath));
+	const languageCodes = graph.languageCodes();
+	const kindIds = graph.kindIds();
+
+	const bodyHtml = entry.body.trim()
+		? await inlineSvgFigures(
+				renderBody(entry.body, resolveLink, languageCodes, kindIds, undefined, entry.path)
+			)
+		: '';
+
+	const summaryHtml = entry.summary?.trim()
+		? renderSummary(entry.summary, resolveLink, languageCodes, { kindIds })
+		: null;
+
+	const nav = await buildDotNav(timelinePath, entry, thread);
+
+	const containingEntity = graph.get(timelinePath);
+	const breadcrumbs: { label: string; href: string }[] = [];
+	if (containingEntity) {
+		breadcrumbs.push({ label: containingEntity.meta.name, href: `/${timelinePath}` });
+	}
+	breadcrumbs.push({ label: nav.timelineTitle, href: `/${timelinePath}` });
+
+	return {
+		kind: 'timeline-dot',
+		...nav,
+		summaryHtml,
+		bodyHtml,
+		breadcrumbs,
+		undated: !!entry.undated,
+		ordinal: ordinalOf(entry, timelinePath),
+		status: entry.status ?? null
 	};
 }

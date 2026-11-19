@@ -1202,6 +1202,14 @@ export interface TimelineEntry {
 	rank?: number;
 	/** The authored `status:`, when present (e.g. `prophesied`). */
 	status?: string;
+	/**
+	 * Entity frontmatter, present only when the dot declares a `kind:`. Such a
+	 * dot is also an entity (same id as `path`): the loader turns this into an
+	 * `Entity` so it takes relations, tags, backlinks and kind pages like any
+	 * other. Timeline-only keys (`type`, `year`, `date`, `calendar`, `target`,
+	 * `rankDisplay`) are already stripped.
+	 */
+	entityMeta?: EntityMeta;
 	/** Raw markdown body (empty string when no prose was authored). */
 	body: string;
 	/** Absolute disk path to the `_time.md` file (for diagnostics). */
@@ -1228,6 +1236,36 @@ export interface Timeline {
 	 * Derived from `meta.target` (single string or array). Empty when unset.
 	 */
 	targets: string[];
+}
+
+/** A neighbouring dot in the timeline strip. */
+export interface TimelineDotNavLink {
+	label: string;
+	href: string;
+	crossThread: { title: string; href: string } | null;
+}
+
+/**
+ * Everything the timeline strip (previous · current · next) needs for one dot.
+ * Shared by the plain dot page and by entity pages of dots that are entities.
+ */
+export interface TimelineDotNav {
+	/** Path of the containing timeline (line). */
+	timelinePath: string;
+	/** Display name of the timeline (for the up-link). */
+	timelineTitle: string;
+	/** What the strip shows for this dot: a date, a rank glyph, or a name. */
+	label: string;
+	/** Secondary label shown below the heading; null when identical. */
+	displayLabel: string | null;
+	prev: TimelineDotNavLink | null;
+	next: TimelineDotNavLink | null;
+	timelineHref: string;
+	thread: string | null;
+	threadTitle: string | null;
+	subThread: { title: string; href: string } | null;
+	parentThreadBack: { label: string; href: string } | null;
+	parentThreadForward: { label: string; href: string } | null;
 }
 
 /**

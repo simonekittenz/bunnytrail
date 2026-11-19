@@ -4,6 +4,7 @@
 	import type { EntityPageData } from './entityPage.load';
 	import { t } from '#lib/i18n.js';
 	import PageHeader from '#lib/components/PageHeader.svelte';
+	import TimelineDotNav from '#lib/components/TimelineDotNav.svelte';
 	import PropertyList from '#lib/components/PropertyList.svelte';
 	import EntityLink from '#lib/components/EntityLink.svelte';
 	import EntityCard from '#lib/components/EntityCard.svelte';
@@ -29,8 +30,9 @@
 
 	const isStub = $derived(!data.html.trim() && data.chapters.length === 0 && data.childGroups.length === 0);
 
+	// A timeline dot shows its rank in the timeline strip instead.
 	const rankGlyph = $derived(
-		data.kindChip?.rank != null && data.kindChip.rankDisplay !== 'none'
+		!data.dotNav && data.kindChip?.rank != null && data.kindChip.rankDisplay !== 'none'
 			? data.kindChip.rankDisplay === 'roman'
 				? toRoman(data.kindChip.rank)
 				: String(data.kindChip.rank)
@@ -348,6 +350,9 @@
 </svelte:head>
 
 <article class="entity">
+	{#if data.dotNav}
+		<TimelineDotNav nav={data.dotNav} />
+	{/if}
 	<PageHeader
 		breadcrumbs={data.breadcrumbs}
 		kindChip={effectiveKindChip}

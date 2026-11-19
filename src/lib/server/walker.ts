@@ -255,56 +255,7 @@ export async function walk(args: WalkArgs): Promise<void> {
 		const craft = (await exists(craftMdPath)) ? await readFile(craftMdPath, 'utf8') : null;
 
 		if (meta && !conflict) {
-			// A bare year (`date: 1735`) parses as a YAML number; keep relation
-			// dates as strings so everything downstream can treat them alike.
-			if (Array.isArray(meta.relations)) {
-				for (const rel of meta.relations) {
-					if (!rel || typeof rel !== 'object') continue;
-					const r = rel as unknown as Record<string, unknown>;
-					for (const field of ['date', 'from', 'to']) {
-						if (typeof r[field] === 'number') r[field] = String(r[field]);
-					}
-				}
-			}
-			// Normalise `kind`: a list (`kind: [temple-complex, city]`) makes the
-			// entity multi-kinded. `kind` keeps the first entry (the primary, used
-			// for labels and grouping); `kinds` holds every entry.
-			const rawKind = (meta as { kind?: unknown }).kind;
-			if (Array.isArray(rawKind)) {
-				const valid = [
-					...new Set(
-						rawKind
-							.filter((v): v is string => typeof v === 'string')
-							.map((v) => v.trim())
-							.filter((v) => v.length > 0)
-					)
-				];
-				if (valid.length !== new Set(rawKind).size) {
-					issues.push({ kind: 'invalid-yaml', entity: id, detail: `kind list contains non-string or empty values` });
-				}
-				(meta as Record<string, unknown>)['kind'] = valid[0];
-				(meta as Record<string, unknown>)['kinds'] = valid.length > 0 ? valid : undefined;
-			} else if (typeof rawKind === 'string' && rawKind.length > 0) {
-				(meta as Record<string, unknown>)['kinds'] = [rawKind];
-			}
-
-			// Normalise `era`: YAML string → [string], array → validated string[].
-			// Non-string / non-array values are dropped with a warning.
-			if (meta.era !== undefined) {
-				const rawEra = meta.era as unknown;
-				if (typeof rawEra === 'string') {
-					(meta as Record<string, unknown>)['era'] = [rawEra];
-				} else if (Array.isArray(rawEra)) {
-					const valid = rawEra.filter((v): v is string => typeof v === 'string');
-					if (valid.length !== rawEra.length) {
-						issues.push({ kind: 'invalid-yaml', entity: id, detail: `era array contains non-string values — only strings are accepted` });
-					}
-					(meta as Record<string, unknown>)['era'] = valid.length > 0 ? valid : undefined;
-				} else {
-					issues.push({ kind: 'invalid-yaml', entity: id, detail: `era must be a string or array of strings` });
-					(meta as Record<string, unknown>)['era'] = undefined;
-				}
-			}
+			normalizeEntityMeta(meta, id, issues);
 
 			entities.set(id, {
 				id,
@@ -672,6 +623,131 @@ export function resolveBookMeta(raw: unknown): ResolvedBookMeta {
 }
 
 /**
+ * Normalise parsed entity frontmatter in place: relation dates stay strings,
+ * a `kind:` list becomes `kind` (primary) + `kinds`, `era` becomes a string[].
+ * Shared by folder entities and timeline dots that are entities.
+ */
+export function normalizeEntityMeta(meta: EntityMeta, id: EntityId, issues: HealthIssue[]): void {
+	// A bare year (`date: 1735`) parses as a YAML number; keep relation
+	// dates as strings so everything downstream can treat them alike.
+	if (Array.isArray(meta.relations)) {
+		for (const rel of meta.relations) {
+			if (!rel || typeof rel !== 'object') continue;
+			const r = rel as unknown as Record<string, unknown>;
+			for (const field of ['date', 'from', 'to']) {
+				if (typeof r[field] === 'number') r[field] = String(r[field]);
+			}
+		}
+	}
+	// Normalise `kind`: a list (`kind: [temple-complex, city]`) makes the
+	// entity multi-kinded. `kind` keeps the first entry (the primary, used
+	// for labels and grouping); `kinds` holds every entry.
+	const rawKind = (meta as { kind?: unknown }).kind;
+	if (Array.isArray(rawKind)) {
+		const valid = [
+			...new Set(
+				rawKind
+					.filter((v): v is string => typeof v === 'string')
+					.map((v) => v.trim())
+					.filter((v) => v.length > 0)
+			)
+		];
+		if (valid.length !== new Set(rawKind).size) {
+			issues.push({ kind: 'invalid-yaml', entity: id, detail: `kind list contains non-string or empty values` });
+		}
+		(meta as Record<string, unknown>)['kind'] = valid[0];
+		(meta as Record<string, unknown>)['kinds'] = valid.length > 0 ? valid : undefined;
+	} else if (typeof rawKind === 'string' && rawKind.length > 0) {
+		(meta as Record<string, unknown>)['kinds'] = [rawKind];
+	}
+
+	// Normalise `era`: YAML string → [string], array → validated string[].
+	// Non-string / non-array values are dropped with a warning.
+	if (meta.era !== undefined) {
+		const rawEra = meta.era as unknown;
+		if (typeof rawEra === 'string') {
+			(meta as Record<string, unknown>)['era'] = [rawEra];
+		} else if (Array.isArray(rawEra)) {
+			const valid = rawEra.filter((v): v is string => typeof v === 'string');
+			if (valid.length !== rawEra.length) {
+				issues.push({ kind: 'invalid-yaml', entity: id, detail: `era array contains non-string values — only strings are accepted` });
+			}
+			(meta as Record<string, unknown>)['era'] = valid.length > 0 ? valid : undefined;
+		} else {
+			issues.push({ kind: 'invalid-yaml', entity: id, detail: `era must be a string or array of strings` });
+			(meta as Record<string, unknown>)['era'] = undefined;
+		}
+	}
+}
+
+/** Keys of a dot's `_time.md` that belong to the timeline, not to the entity. */
+const TIMELINE_ONLY_KEYS = ['type', 'year', 'date', 'calendar', 'target', 'rankDisplay'];
+
+/** A dot is also an entity when it declares a non-empty `kind:`. */
+function hasKind(meta: TimelineMeta): boolean {
+	const k = (meta as { kind?: unknown }).kind;
+	return Array.isArray(k) ? k.length > 0 : typeof k === 'string' && k.trim().length > 0;
+}
+
+/** The entity frontmatter of a dot: everything but the timeline-only keys. */
+function dotEntityMeta(meta: TimelineMeta, folderName: string): EntityMeta {
+	const out: Record<string, unknown> = { ...(meta as Record<string, unknown>) };
+	for (const key of TIMELINE_ONLY_KEYS) delete out[key];
+	if (typeof out.name !== 'string' || !out.name.trim()) out.name = folderName;
+	return out as unknown as EntityMeta;
+}
+
+/**
+ * Build the entities that timeline dots declare (a dot with a `kind:`),
+ * keyed by dot path. Same normalisation as folder entities; the caller merges
+ * them into the entity map. A dot sharing an id with an existing entity is
+ * skipped and reported.
+ */
+export function timelineDotEntities(
+	timelines: Map<string, Timeline>,
+	existing: Map<EntityId, Entity>,
+	issues: HealthIssue[]
+): Map<EntityId, Entity> {
+	const out = new Map<EntityId, Entity>();
+	for (const tl of timelines.values()) {
+		for (const entry of tl.entries) {
+			if (!entry.entityMeta) continue;
+			const id: EntityId = entry.path;
+			if (existing.has(id)) {
+				issues.push({
+					kind: 'invalid-yaml',
+					entity: id,
+					detail: `timeline entry has a kind but its path is already an entity`
+				});
+				continue;
+			}
+			const meta = entry.entityMeta;
+			normalizeEntityMeta(meta, id, issues);
+			out.set(id, {
+				id,
+				type: parentOf(id),
+				slug: leafOf(id),
+				meta,
+				body: entry.body,
+				wikilinks: extractWikilinks(entry.body),
+				kindLinks: extractKindLinks(entry.body),
+				kindRefs: extractKindRefs(meta),
+				yamlPath: entry.mdPath,
+				mdPath: entry.mdPath,
+				parent: null,
+				children: [],
+				chapters: [],
+				book: null,
+				craft: null,
+				sections: [],
+				lexicon: []
+			});
+		}
+	}
+	return out;
+}
+
+/**
  * Walk `contentDir` recursively, discovering every `_time.md` file.
  *
  * Two structural roles:
@@ -847,6 +923,7 @@ async function walkTimelinesDir(
 					summary: typeof childMeta.summary === 'string' ? childMeta.summary : undefined,
 					name: typeof childMeta.name === 'string' && childMeta.name.trim() ? childMeta.name.trim() : undefined,
 					status: typeof childMeta.status === 'string' && childMeta.status.trim() ? childMeta.status.trim() : undefined,
+					...(hasKind(childMeta) ? { entityMeta: dotEntityMeta(childMeta, childName) } : {}),
 					body: childSplit.body,
 					mdPath: childTimeMdPath
 				});

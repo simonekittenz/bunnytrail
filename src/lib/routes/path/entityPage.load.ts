@@ -6,6 +6,7 @@ import { extractHeadings, parseTocSetting, resolveToc } from '#lib/server/toc.js
 import { hasProse } from '#lib/server/prose.js';
 import { resolveListenTemplate } from '#lib/listen.js';
 import { makeCollectionResolver, renderEntityBody, renderSummary } from '#lib/server/markdown.js';
+import { buildDotNav } from './timelineDotPage.load';
 import { formatCalendarDateById, formatCalendarRange } from '#lib/calendar.js';
 import { kindsOf, titleCaseSlug, toRoman, undatedEntryTitle, relationLabel, type Entity, type RankDisplay, type VocabEntry } from '#lib/types.js';
 import type { ViewMode } from '#lib/cluster.js';
@@ -15,7 +16,11 @@ import { buildSectionNav, folderBreadcrumbs } from './subpage';
  * Build the view-model for an entity page. Returned shape is consumed
  * by `EntityPage.svelte`.
  */
-export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor') {
+export async function loadEntityPage(
+	entity: Entity,
+	mode: ViewMode = 'visitor',
+	thread: string | null = null
+) {
 	const id = entity.id;
 	const type = entity.type;
 
@@ -102,6 +107,9 @@ export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor')
 	//   3. Default: 'arabic'
 	const folderRankDisplay: RankDisplay = (() => {
 		if (!type) return 'arabic';
+		// A timeline dot that is an entity: the line governs its rank glyph.
+		const fromTimeline = graph.timeline(type)?.meta.rankDisplay;
+		if (fromTimeline) return fromTimeline;
 		const fromCollection = graph.collection(type)?.meta.rankDisplay;
 		if (fromCollection) return fromCollection;
 		const parentEntityRankDisplay = graph.get(type)?.meta.rankDisplay;
@@ -557,6 +565,12 @@ export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor')
 	// rank, find all folder-siblings (same containing folder) that also
 	// have a rank, sort them, and pick the immediate neighbours.
 	// rankDisplay is inherited from the containing folder's _collection.
+	// A timeline dot that is also an entity gets the timeline strip on top.
+	const dotEntry = graph.timelineEntry(id);
+	const dotNav = dotEntry
+		? await buildDotNav(dotEntry.path.slice(0, dotEntry.path.lastIndexOf('/')), dotEntry, thread, true)
+		: null;
+
 	const rankNav: {
 		prev: { id: string; name: string; rank: number } | null;
 		next: { id: string; name: string; rank: number } | null;
@@ -564,6 +578,8 @@ export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor')
 	} | null = (() => {
 		const myRank = typeof entity.meta.rank === 'number' ? entity.meta.rank : null;
 		if (myRank === null || !type) return null;
+		// A timeline dot is navigated by the timeline strip instead.
+		if (dotEntry) return null;
 
 		const ranked = graph
 			.byFolder(type)
@@ -660,6 +676,7 @@ export async function loadEntityPage(entity: Entity, mode: ViewMode = 'visitor')
 		hasDictionaryPage: graph.hasDictionaryPage(entity.id),
 		listen: resolveListenTemplate(entity.meta.listen),
 		rankNav,
+		dotNav,
 		classMates,
 		qualifierHolders,
 		statistics,
