@@ -613,7 +613,7 @@
 
 	<div class="layout">
 		<div class="content">
-		{#if visibleSubcollections.length > 0 || data.timelines.length > 0}
+		{#if visibleSubcollections.length > 0}
 			<section class="subcollections" aria-label={ui.collection_subcollections_aria}>
 				<ul class="subcollection-list">
 					{#each visibleSubcollections as sub (sub.type)}
@@ -629,6 +629,14 @@
 						dateRange={sub.dateRange ?? null}
 					/>
 					{/each}
+				</ul>
+			</section>
+		{/if}
+
+		{#if data.timelines.length > 0}
+			<!-- Timelines get their own block, set apart from the collection tiles above. -->
+			<section class="subcollections timelines" aria-label={ui.collection_subcollections_aria}>
+				<ul class="subcollection-list">
 					{#each data.timelines as tl (tl.path)}
 						<li class="timeline-tile">
 							<a class="timeline-tile__link" href={tl.href}>

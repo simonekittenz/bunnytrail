@@ -60,6 +60,42 @@ export type SubcollectionTree = {
 export const ORBIT_KINDS = new Set(['member-of', 'orbits']);
 
 // ---------------------------------------------------------------------------
+// timelineTiles — timelines sitting directly inside one or more folders
+// ---------------------------------------------------------------------------
+
+/**
+ * Tiles for the timelines that are immediate children of any of `paths`
+ * (a collection page passes its own path; an aggregate page passes the
+ * folder's path in every cluster). Sorted by title.
+ */
+export function timelineTiles(paths: string[]) {
+	const calendars = world.config().customCalendars?.calendars;
+	const parents = new Set(paths);
+	return [...graph.timelines().values()]
+		.filter((tl) => {
+			const slash = tl.path.lastIndexOf('/');
+			return slash !== -1 && parents.has(tl.path.slice(0, slash));
+		})
+		.map((tl) => {
+			const range = graph.timelineYearRange(tl.path);
+			return {
+				path: tl.path,
+				href: `/${tl.path}`,
+				title:
+					tl.meta.name ??
+					graph.get(tl.path)?.meta.name ??
+					tl.path.slice(tl.path.lastIndexOf('/') + 1).replace(/-/g, ' '),
+				summary: tl.meta.summary ?? null,
+				...range,
+				dateRange: calendars
+					? formatCalendarRange(range.firstCalendarDate, range.lastCalendarDate, calendars)
+					: null
+			};
+		})
+		.sort((a, b) => a.title.localeCompare(b.title));
+}
+
+// ---------------------------------------------------------------------------
 // toCard — entity → wire card shape
 // ---------------------------------------------------------------------------
 

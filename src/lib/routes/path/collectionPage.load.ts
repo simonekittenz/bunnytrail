@@ -12,6 +12,7 @@ import {
 	compareCardRank,
 	labelForFolder,
 	serialiseKinds,
+	timelineTiles,
 	toCard,
 	type ContainerNode,
 	type OrbitNode,
@@ -324,27 +325,7 @@ export async function loadCollectionPage(path: string) {
 	// Timeline tiles: immediate child folders of this collection that
 	// carry a _time.md (are known timelines). Shown alongside
 	// subcollection tiles so they're discoverable from browse pages.
-	const timelines = [...graph.timelines().values()]
-		.filter((tl) => {
-			if (!tl.path.startsWith(`${path}/`)) return false;
-			const rest = tl.path.slice(path.length + 1);
-			return !rest.includes('/');
-		})
-		.map((tl) => {
-			const range = graph.timelineYearRange(tl.path);
-			const calendars = world.config().customCalendars?.calendars;
-			return {
-				path: tl.path,
-				href: `/${tl.path}`,
-				title: tl.meta.name ?? graph.get(tl.path)?.meta.name ?? tl.path.slice(tl.path.lastIndexOf('/') + 1).replace(/-/g, ' '),
-				summary: tl.meta.summary ?? null,
-				...range,
-				dateRange: calendars
-					? formatCalendarRange(range.firstCalendarDate, range.lastCalendarDate, calendars)
-					: null
-			};
-		})
-		.sort((a, b) => a.title.localeCompare(b.title));
+	const timelines = timelineTiles([path]);
 
 	// Prev/next navigation between sibling collections that have an
 	// explicit `rank` in their `_collection` frontmatter. Siblings

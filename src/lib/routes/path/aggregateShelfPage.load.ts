@@ -6,6 +6,7 @@ import {
 	buildSubcollectionEntry,
 	buildSubcollectionTree,
 	serialiseKinds,
+	timelineTiles,
 	toCard,
 	type ContainerNode,
 	type OrbitNode
@@ -127,7 +128,8 @@ export function loadAggregateShelfPage(shelf: string) {
 		description,
 		bodyHtml: null,
 		subcollections,
-		timelines: [] as Array<{ path: string; href: string; title: string; summary: string | null; firstYear: number | null; lastYear: number | null; dateRange: string | null; firstCalendarDate: import('#lib/calendar.js').CalendarDate | null; lastCalendarDate: import('#lib/calendar.js').CalendarDate | null }>,
+		// Timelines directly inside this shelf in any cluster.
+		timelines: timelineTiles(clusterPaths),
 		subShelves,
 		subcollectionTrees,
 		containers: [] as ContainerNode[],

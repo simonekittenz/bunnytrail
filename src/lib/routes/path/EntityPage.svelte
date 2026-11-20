@@ -66,6 +66,8 @@
 	// A language with its own dictionary page links there (via the section
 	// nav) instead of repeating the word list as an inline tab.
 	const hasVocabulary = $derived(data.vocabulary.length > 0 && !data.hasDictionaryPage);
+	// SectionNav only renders with two or more tabs.
+	const sectionNavVisible = $derived(data.sectionNav.length > 1);
 	const hasTabs = $derived(hasClassMates || hasQualifierHolders || hasStatistics || hasVocabulary);
 	const VALID_TABS = ['about', 'instances', 'holders', 'statistics', 'vocabulary'] as const;
 	type TabId = (typeof VALID_TABS)[number];
@@ -433,22 +435,27 @@
 
 	{#if !hasTabs || effectiveTab === 'about'}
 
-	<!-- Fleuron: same ornamental chapter-mark used on collection pages,
-	     marking the boundary between the editorial header zone and the
-	     content body. Unconditional — every entity page has a layout
-	     to follow. When the entity has a rank, the rank numeral
-	     replaces the ornament glyph in the centre of the rule. -->
-	<div class="bt-fleuron" aria-hidden="true">
-		<span class="bt-fleuron__rule"></span>
-		{#if rankGlyph != null}
-			<span class="bt-fleuron__glyph bt-fleuron__glyph--rank">{rankGlyph}</span>
-		{:else if ornamentSvg}
-			<span class="bt-fleuron__glyph bt-fleuron__glyph--svg">{@html ornamentSvg}</span>
-		{:else}
-			<span class="bt-fleuron__glyph"></span>
-		{/if}
-		<span class="bt-fleuron__rule"></span>
-	</div>
+	<!-- The section tabs (when shown) carry their own rule, which already marks
+	     the boundary between header and body; a fleuron right under it would
+	     stack a second rule, so it is left out there. -->
+	{#if !sectionNavVisible}
+		<!-- Fleuron: same ornamental chapter-mark used on collection pages,
+		     marking the boundary between the editorial header zone and the
+		     content body. Unconditional — every entity page has a layout
+		     to follow. When the entity has a rank, the rank numeral
+		     replaces the ornament glyph in the centre of the rule. -->
+		<div class="bt-fleuron" aria-hidden="true">
+			<span class="bt-fleuron__rule"></span>
+			{#if rankGlyph != null}
+				<span class="bt-fleuron__glyph bt-fleuron__glyph--rank">{rankGlyph}</span>
+			{:else if ornamentSvg}
+				<span class="bt-fleuron__glyph bt-fleuron__glyph--svg">{@html ornamentSvg}</span>
+			{:else}
+				<span class="bt-fleuron__glyph"></span>
+			{/if}
+			<span class="bt-fleuron__rule"></span>
+		</div>
+	{/if}
 
 	{#if data.rankNav}
 		<nav class="rank-nav" aria-label={ui.entity_rank_nav_aria}>
