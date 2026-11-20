@@ -278,7 +278,9 @@ summary: A future reconciliation anticipated in certain prophetic traditions.
   `data-status` hook for theming.
 - They never count towards a timeline's year or date range, and they
   carry no calendar. Don't mix them into a calendared line.
-- A non-numeric folder with no `year`, `date` or `rank` is still skipped.
+- A non-numeric folder with no `year`, `date` or `rank` is kept (it may be an
+  entity others link to), ordered after the ranked entries and reported on the
+  health page so it can be placed.
 - `rank:` on a nested `type: period` line orders sibling sub-timelines
   (ranked first, the rest in folder order).
 

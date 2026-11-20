@@ -53,13 +53,20 @@ describe('undated timeline entries', () => {
 		]);
 	});
 
-	it('still skips a non-numeric folder that has neither a date, a year nor a rank', async () => {
+	it('keeps an undated entry with no rank, ordered after the ranked ones, and reports it', async () => {
 		const root = await seed('---\ntype: line\n---\n', {
 			shapeless: 'type: dot\nname: No position',
+			second: 'type: dot\nname: Ranked\nrank: 2',
 			'1900': 'type: dot'
 		});
-		const tl = (await walkTimelines(root, [])).get('history/ages')!;
-		expect(tl.entries.map((e) => e.path.split('/').pop())).toEqual(['1900']);
+		const issues: HealthIssue[] = [];
+		const tl = (await walkTimelines(root, issues)).get('history/ages')!;
+		expect(tl.entries.map((e) => e.path.split('/').pop())).toEqual(['1900', 'second', 'shapeless']);
+		expect(tl.entries[2]).toMatchObject({ undated: true, name: 'No position' });
+		expect(tl.entries[2]!.rank).toBeUndefined();
+		expect(issues).toHaveLength(1);
+		expect(issues[0]).toMatchObject({ entity: 'history/ages/shapeless' });
+		expect(issues[0]!.detail).toContain('no year, date or rank');
 	});
 
 	it('keeps the authored rank on a dated entry without making it undated', async () => {

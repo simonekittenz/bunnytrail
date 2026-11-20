@@ -901,16 +901,24 @@ async function walkTimelinesDir(
 				}
 
 				// No calendar date and no year: the entry is *undated*. A numeric
-				// `rank:` still gives it a place in the sequence (its sort key);
-				// without one a NaN key would break ordering, so skip it.
+				// `rank:` gives it its place in the sequence (its sort key). Without
+				// one it is kept, ordered after every ranked entry (folder order
+				// among themselves), and reported so the author can place it. It is
+				// never dropped: it may be an entity others link to.
 				const rank =
 					typeof childMeta.rank === 'number' && Number.isFinite(childMeta.rank)
 						? childMeta.rank
 						: undefined;
 				const undated = !calendarDate && isNaN(year);
 				if (undated) {
-					if (rank === undefined) continue;
-					year = rank;
+					if (rank === undefined) {
+						issues.push({
+							kind: 'invalid-yaml',
+							entity: relPath ? `${relPath}/${childName}` : childName,
+							detail: `timeline entry has no year, date or rank — ordered last`
+						});
+					}
+					year = rank ?? Number.MAX_SAFE_INTEGER;
 				}
 
 				const childRelPath = relPath ? `${relPath}/${childName}` : childName;
