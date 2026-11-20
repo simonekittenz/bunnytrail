@@ -297,6 +297,16 @@ skip any character carrying one) while keeping tie bars, nasalisation and
 the non-syllabic mark. Dictionary only: the gloss word cards sit inside an
 `<a>`, so they can't hold links.
 
+**Galleries.** A ```` ```gallery ```` fence is a group of `![alt](src)` lines
+laid out side by side (`.bt-gallery`). Add the carousel option --
+```` ```gallery carousel ```` or the ```` ```carousel ```` shorthand -- for one
+scroll-snapping row with each slide's neighbours showing at its sides
+(`.bt-gallery--carousel`, `.bt-carousel__track`; one image degrades to a
+plain gallery). It scrolls on its own; `GalleryCarousel.svelte` (mounted in
+the layout) adds the arrows, arrow keys, and click-a-neighbour-to-centre,
+and sets `data-bt-carousel-ready` / `data-active` so the CSS can dim the
+other slides. The centred image still opens the lightbox.
+
 **Tables.** `wrapTables` in `markdown.ts` wraps every `<table>` (pipe or
 raw HTML) in `.bt-table-wrap` with class `bt-table`, so wide charts
 scroll sideways. Merged cells need raw HTML.

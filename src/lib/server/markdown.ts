@@ -198,7 +198,7 @@ function escapeHtml(s: string): string {
  * container — authors who want mixed prose alongside photos
  * should write it outside the fence.
  */
-function renderGalleryBlock(text: string): string {
+function renderGalleryBlock(text: string, carousel = false): string {
 	const items = text
 		.split('\n')
 		.map((line) => line.trim())
@@ -206,7 +206,42 @@ function renderGalleryBlock(text: string): string {
 		.map((line) => marked.parseInline(line, { async: false }) as string)
 		.filter((html) => /<img\b/i.test(html));
 	if (items.length === 0) return '';
+	if (carousel) return renderCarousel(items);
 	return `<div class="bt-gallery">${items.join('')}</div>\n`;
+}
+
+/**
+ * The carousel variant of a gallery: the same bare `<img>`s, laid out as a
+ * horizontally scrolling, scroll-snapping track so each slide's neighbours
+ * show at its sides. Works with plain scrolling (swipe, trackpad, keyboard);
+ * `GalleryCarousel.svelte` adds the arrows and marks the centred slide. A
+ * single image needs no carousel and is rendered as a plain gallery.
+ */
+function renderCarousel(items: string[]): string {
+	if (items.length === 1) return `<div class="bt-gallery">${items[0]}</div>\n`;
+	const arrow = (dir: 'prev' | 'next', glyph: string, label: string) =>
+		`<button type="button" class="bt-carousel__nav bt-carousel__nav--${dir}" ` +
+		`data-bt-carousel-${dir} aria-label="${label}"><span aria-hidden="true">${glyph}</span></button>`;
+	return (
+		`<div class="bt-gallery bt-gallery--carousel" data-bt-carousel role="group" ` +
+		`aria-roledescription="carousel" aria-label="Image gallery">` +
+		arrow('prev', '‹', 'Previous image') +
+		arrow('next', '›', 'Next image') +
+		`<div class="bt-carousel__track" tabindex="0">${items.join('')}</div>` +
+		`</div>\n`
+	);
+}
+
+/**
+ * Render a fence as a gallery when its info string asks for one:
+ * `gallery`, `gallery carousel`, or the `carousel` shorthand. Returns
+ * null for any other fence.
+ */
+function renderGalleryFence(lang: string | undefined, text: string): string | null {
+	const [word, ...options] = (lang ?? '').trim().split(/\s+/);
+	if (word === 'carousel') return renderGalleryBlock(text, true);
+	if (word === 'gallery') return renderGalleryBlock(text, options.includes('carousel'));
+	return null;
 }
 
 /**
@@ -463,9 +498,8 @@ export function renderBody(
 			});
 			return `<div class="bt-verse">${spans.join('')}</div>\n`;
 		}
-		if (token.lang === 'gallery') {
-			return renderGalleryBlock(token.text);
-		}
+		const galleryHtml = renderGalleryFence(token.lang, token.text);
+		if (galleryHtml !== null) return galleryHtml;
 		// `ipa-chart` and `paradigm` fences are YAML grids (see blocks.ts).
 		const structured = renderStructuredBlock(token.lang, token.text, { languageCodes });
 		if (structured !== null) return structured;
@@ -723,9 +757,8 @@ export function renderPlainBody(body: string, resolveLink?: LinkResolver): strin
 			});
 			return `<div class="bt-verse">${spans.join('')}</div>\n`;
 		}
-		if (token.lang === 'gallery') {
-			return renderGalleryBlock(token.text);
-		}
+		const galleryHtml = renderGalleryFence(token.lang, token.text);
+		if (galleryHtml !== null) return galleryHtml;
 		return defaultCode(token);
 	};
 	return marked.parse(rewritten, { async: false, renderer }) as string;

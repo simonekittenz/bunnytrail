@@ -488,6 +488,134 @@ blockquote {
 	}
 }
 
+/* ── Carousel gallery ──────────────────────────────────────────
+   ```gallery carousel (or ```carousel): the same images as a gallery,
+   as one scroll-snapping row with each slide's neighbours showing at its
+   sides. Pure CSS scrolling works on its own (swipe, trackpad, Tab then
+   arrow keys). GalleryCarousel.svelte layers on the arrows and sets
+   `data-bt-carousel-ready` on the block and `data-active` on the centred
+   slide, which only then dims the others. Worlds can retheme any of it via
+   `.bt-gallery--carousel`, `.bt-carousel__track`, `.bt-carousel__nav`. */
+.bt-gallery--carousel {
+	position: relative;
+	display: block;
+	max-width: var(--figure-max-width);
+}
+
+.bt-carousel__track {
+	position: relative;
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-4);
+	/* Side padding lets the first and last slide reach the centre. */
+	padding: var(--space-2) 18%;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	scroll-snap-type: x mandatory;
+	scrollbar-width: none;
+}
+
+.bt-carousel__track::-webkit-scrollbar {
+	display: none;
+}
+
+.bt-carousel__track:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+/* The track's side padding (18% each) leaves the centre 64% for the
+   current slide, so a slide fills the content box. */
+.bt-carousel__track > .bt-inline-img {
+	flex: 0 0 100%;
+	max-width: none;
+	margin: 0;
+	scroll-snap-align: center;
+	scroll-snap-stop: always;
+	transition:
+		opacity 200ms ease,
+		transform 200ms ease;
+}
+
+.bt-carousel__track > .bt-inline-img img {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 32rem;
+	object-fit: contain;
+}
+
+/* Only dim the others once the script can say which slide is centred. */
+[data-bt-carousel-ready] .bt-carousel__track > .bt-inline-img:not([data-active]) {
+	opacity: 0.5;
+	transform: scale(0.94);
+	cursor: pointer;
+}
+
+[data-bt-carousel-ready] .bt-carousel__track > .bt-inline-img:not([data-active]) figcaption,
+[data-bt-carousel-ready] .bt-carousel__track > .bt-inline-img:not([data-active]) .bt-inline-img__expand {
+	visibility: hidden;
+}
+
+.bt-carousel__nav {
+	position: absolute;
+	top: 45%;
+	z-index: 2;
+	display: grid;
+	place-items: center;
+	width: 2.5rem;
+	height: 2.5rem;
+	padding: 0 0 0.15em;
+	font-size: var(--text-xl);
+	line-height: 1;
+	color: var(--ink-soft);
+	background: var(--vellum, var(--page));
+	border: 1px solid var(--rule);
+	border-radius: 50%;
+	cursor: pointer;
+	transition:
+		color 120ms ease,
+		border-color 120ms ease,
+		opacity 160ms ease;
+}
+
+.bt-carousel__nav--prev {
+	left: var(--space-2);
+}
+
+.bt-carousel__nav--next {
+	right: var(--space-2);
+}
+
+.bt-carousel__nav:hover,
+.bt-carousel__nav:focus-visible {
+	color: var(--accent);
+	border-color: var(--accent);
+	outline: none;
+}
+
+/* Arrows do nothing until the script is running, and none are needed
+   at the ends. */
+.bt-gallery--carousel:not([data-bt-carousel-ready]) .bt-carousel__nav,
+.bt-gallery--carousel[data-pos='start'] .bt-carousel__nav--prev,
+.bt-gallery--carousel[data-pos='end'] .bt-carousel__nav--next {
+	opacity: 0;
+	pointer-events: none;
+}
+
+@media (max-width: 640px) {
+	.bt-carousel__track {
+		padding-inline: 10%;
+	}
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.bt-carousel__track > .bt-inline-img {
+		transition: none;
+	}
+}
+
 /* Fleuron — shared ornamental chapter-mark used on the home hero,
    collection, entity, and guide pages. All layout and decorative
    properties live here so every page gets them from a single

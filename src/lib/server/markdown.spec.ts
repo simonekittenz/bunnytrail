@@ -482,6 +482,58 @@ describe('renderBody', () => {
 			const html = renderBody('```gallery\nnot an image\n```', resolve, langs);
 			expect(html).not.toContain('bt-gallery');
 		});
+
+		it('leaves a plain gallery without any carousel chrome', () => {
+			const html = renderBody('```gallery\n![A](a.jpg)\n![B](b.jpg)\n```', resolve, langs);
+			expect(html).not.toContain('bt-carousel');
+			expect(html).not.toContain('data-bt-carousel');
+		});
+
+		describe('carousel option', () => {
+			const three = '![A](a.jpg)\n![B](b.jpg)\n![C](c.jpg)';
+
+			it.each(['gallery carousel', 'carousel'])(
+				'"%s" renders a scroll-snap track with arrows',
+				(lang) => {
+					const html = renderBody(`\`\`\`${lang}\n${three}\n\`\`\``, resolve, langs);
+					expect(html).toContain('class="bt-gallery bt-gallery--carousel"');
+					expect(html).toContain('data-bt-carousel');
+					expect(html).toContain('<div class="bt-carousel__track" tabindex="0">');
+					expect(html).toContain('data-bt-carousel-prev');
+					expect(html).toContain('data-bt-carousel-next');
+					expect(html.match(/<img\b/g)).toHaveLength(3);
+				}
+			);
+
+			it('keeps resolving each image src like a plain gallery', () => {
+				const html = renderBody(
+					`\`\`\`gallery carousel\n${three}\n\`\`\``,
+					resolve,
+					langs,
+					new Set(),
+					undefined,
+					'characters/kael'
+				);
+				expect(html).toContain('<img src="/api/entity-assets/characters/kael/a.jpg" alt="A">');
+			});
+
+			it('falls back to a plain gallery for a single image', () => {
+				const html = renderBody('```gallery carousel\n![A](a.jpg)\n```', resolve, langs);
+				expect(html).toContain('<div class="bt-gallery">');
+				expect(html).not.toContain('bt-carousel');
+			});
+
+			it('renders nothing when there are no image lines', () => {
+				const html = renderBody('```carousel\nnot an image\n```', resolve, langs);
+				expect(html).not.toContain('bt-gallery');
+			});
+
+			it('ignores unknown gallery options', () => {
+				const html = renderBody(`\`\`\`gallery sparkly\n${three}\n\`\`\``, resolve, langs);
+				expect(html).toContain('<div class="bt-gallery">');
+				expect(html).not.toContain('bt-carousel');
+			});
+		});
 	});
 
 	describe('wikilinks inside raw HTML chrome', () => {

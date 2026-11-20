@@ -9,6 +9,7 @@
 	import { t } from '#lib/i18n.js';
 	import { paintAllScope, paintMode, readMode, translateUrl, type ScopeContext, type ViewMode } from '#lib/cluster.js';
 	import SvgLightbox from '#lib/components/SvgLightbox.svelte';
+	import GalleryCarousel from '#lib/components/GalleryCarousel.svelte';
 	import SearchOverlay from '#lib/components/SearchOverlay.svelte';
 	import type { Snippet } from 'svelte';
 	import type { EraDef, EraConfig } from '#lib/types.js';
@@ -894,6 +895,7 @@
 
 <SearchOverlay open={searchOpen} onclose={() => (searchOpen = false)} />
 <SvgLightbox />
+<GalleryCarousel />
 
 <style>
 	.page {
