@@ -169,6 +169,7 @@ export async function loadAll(
 		allowUndefinedRelations: opts.allowUndefinedRelations ?? false,
 		propertyRegistry: registryResult.properties,
 		allowUndefinedProperties: opts.allowUndefinedProperties ?? false,
+		timelinePaths: [...timelines.keys()],
 		issues
 	};
 

@@ -47,6 +47,7 @@ below).
 | Kind link                        | `[[kinds/human]]`                      | Validated against the kind registry                                                     | `<a href="/kinds/human">human</a>`                      |
 | Kind link + label                | `[[kinds/human\|human]]`               | Same                                                                                    | `<a href="/kinds/human">human</a>`                      |
 | Language tag                     | `[[tha]]`                              | 2–8 lowercase letters; must match a registered `meta.code`                              | `<sup class="lang-tag"><a href="/…">tha</a></sup>`      |
+| Shelf / folder                   | `[[foundation/mundus\|Mundus]]`        | A collection, timeline, or any folder that has content; tried after entities           | `<a href="/foundation/mundus">Mundus</a>`              |
 | Collection fold-out (whole-line) | `[[collection:places/bayurinda]]`      | Path of a known collection                                                              | `<details class="collection-include">…</details>`       |
 
 **The label order is `target|label`**, not `label|target`. Easy mistake
@@ -212,6 +213,26 @@ other entity link in prose — labels and anchors work the same way.
 Note: kind references in structured YAML (`nativeBeings: [kinds/human]`,
 `traits: [kinds/nearborn]`) are a separate mechanism and have their own
 inverse-label conventions (see `src/lib/server/kindLinkLabels.ts`).
+
+## Linking to shelves and folders
+
+When a path matches no entity, it is tried as a **folder**: a registered
+collection (`_collection.{yaml,md}`), a timeline line, or any folder that
+has content under it (so a shelf needs no `_collection` file to be
+linkable). The same scoping applies as for entities — a full path from a
+cluster or universal root, a cluster-local path, or a bare slug that falls
+back to the universal substrate — so `[[foundation/mundus|Mundus]]`,
+`[[people/groups|Groups]]` and `[[mundus|Mundus]]` all reach a shelf page.
+
+- **Entities win.** A path that is both an entity and a folder links to the
+  entity.
+- A link to a folder is a plain link, not a graph edge: it adds no backlink
+  or relation, and `entity.wikilinks` holds entity ids only.
+- A folder link must still carry a label, like any other wikilink.
+- The folder's page lists the entities that link to it under **Mentioned by**
+  (entities inside the folder itself are left out, since the page already
+  lists them).
+- Missing paths are still reported as broken links.
 
 ## Collection fold-out directive
 

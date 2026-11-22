@@ -116,6 +116,29 @@ export function extractKindRefs(meta: unknown): Record<string, string[]> {
 }
 
 /**
+ * Every folder path a wikilink may point at, as a map keyed by path so it can
+ * go straight into `resolveWikilink`: registered collections, timeline lines,
+ * and every ancestor folder of any entity (an implicit shelf such as
+ * `foundation/mundus` needs no `_collection` file to be linkable).
+ */
+export function collectFolderPaths(
+	entityIds: Iterable<string>,
+	collectionPaths: Iterable<string>,
+	timelinePaths: Iterable<string> = []
+): Map<string, true> {
+	const out = new Map<string, true>();
+	const addWithAncestors = (path: string, includeSelf: boolean) => {
+		const segs = path.split('/');
+		const last = includeSelf ? segs.length : segs.length - 1;
+		for (let n = 1; n <= last; n++) out.set(segs.slice(0, n).join('/'), true);
+	};
+	for (const id of entityIds) addWithAncestors(id, false);
+	for (const p of collectionPaths) addWithAncestors(p, true);
+	for (const p of timelinePaths) addWithAncestors(p, true);
+	return out;
+}
+
+/**
  * Resolve a wikilink path to a canonical entity id.
  *
  * The algorithm is cluster-scoped when `fromCluster` is set and the

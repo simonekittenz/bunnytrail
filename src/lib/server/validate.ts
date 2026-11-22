@@ -1,7 +1,13 @@
 import type { Collection, Entity, EntityId, HealthIssue, Kind, PropertyRegistry, RelationRegistry } from '#lib/types.js';
 import { kindsOf } from '#lib/types.js';
 import { isValidDate } from '#lib/dates.js';
-import { extractUnlabelledWikilinks, extractWikilinks, resolveWikilink } from './wikilinks';
+import {
+	collectFolderPaths,
+	extractUnlabelledWikilinks,
+	extractWikilinks,
+	resolveWikilink,
+	type WikilinkResolveResult
+} from './wikilinks';
 
 /**
  * Everything needed to run post-walk validation. Passed as a single
@@ -22,7 +28,33 @@ export interface ValidateArgs {
 	propertyRegistry: PropertyRegistry;
 	/** When false, property keys not in the registry emit health warnings. */
 	allowUndefinedProperties: boolean;
+	/** Timeline line paths; folders a wikilink may point at, like collections. */
+	timelinePaths?: Iterable<string>;
 	issues: HealthIssue[];
+}
+
+const folderCache = new WeakMap<ValidateArgs, Map<string, true>>();
+
+/**
+ * Resolve a wikilink to an entity, or failing that to a folder (a collection,
+ * timeline or implicit shelf) — the same order the page renderer uses. The
+ * entity failure's reason is kept when neither matches, so messages are unchanged.
+ */
+function resolveLinkTarget(
+	args: ValidateArgs,
+	raw: string,
+	fromCluster: string | null
+): WikilinkResolveResult {
+	const { entities, clusterSet, universalSet } = args;
+	const r = resolveWikilink(raw, entities, fromCluster, clusterSet, universalSet);
+	if (r.id !== null) return r;
+	let folders = folderCache.get(args);
+	if (!folders) {
+		folders = collectFolderPaths(entities.keys(), args.collections.keys(), args.timelinePaths ?? []);
+		folderCache.set(args, folders);
+	}
+	const f = resolveWikilink(raw, folders, fromCluster, clusterSet, universalSet);
+	return f.id !== null ? f : r;
 }
 
 /**
@@ -89,17 +121,21 @@ export function validateEntityWikilinks(args: ValidateArgs): void {
 	const { entities, clusterSet, universalSet, langCodes, issues } = args;
 	for (const entity of entities.values()) {
 		const resolved = new Set<EntityId>();
+		const folders = new Set<EntityId>();
 		const fromCluster = clusterOf(entity.id, clusterSet);
 		for (const raw of entity.wikilinks) {
 			if (langCodes.has(raw)) continue;
-			const r = resolveWikilink(raw, entities, fromCluster, clusterSet, universalSet);
+			const r = resolveLinkTarget(args, raw, fromCluster);
 			if (r.id !== null) {
-				resolved.add(r.id);
+				// A link to a folder is fine, but it is not a graph edge.
+				if (entities.has(r.id)) resolved.add(r.id);
+				else folders.add(r.id);
 				continue;
 			}
 			issues.push(brokenWikilinkIssue(entity.id, raw, r, fromCluster, 'wikilink'));
 		}
 		entity.wikilinks = [...resolved];
+		entity.folderLinks = [...folders];
 	}
 }
 
@@ -222,7 +258,7 @@ export function validateSummaryWikilinks(args: ValidateArgs): void {
 		const fromCluster = clusterOf(entity.id, clusterSet);
 		for (const raw of extractWikilinks(summary)) {
 			if (langCodes.has(raw)) continue;
-			const r = resolveWikilink(raw, entities, fromCluster, clusterSet, universalSet);
+			const r = resolveLinkTarget(args, raw, fromCluster);
 			if (r.id !== null) continue;
 			issues.push(brokenWikilinkIssue(entity.id, raw, r, fromCluster, 'summary wikilink'));
 		}
@@ -242,7 +278,7 @@ export function validateCollectionWikilinks(args: ValidateArgs): void {
 		const fromCluster = clusterSet.has(topLevel) ? topLevel : null;
 		for (const raw of extractWikilinks(collection.body)) {
 			if (langCodes.has(raw)) continue;
-			const r = resolveWikilink(raw, entities, fromCluster, clusterSet, universalSet);
+			const r = resolveLinkTarget(args, raw, fromCluster);
 			if (r.id !== null) continue;
 			issues.push(
 				brokenWikilinkIssue(undefined, raw, r, fromCluster, `${collPath}/_collection.md: wikilink`)
@@ -372,7 +408,7 @@ export function validateLangLinks(args: ValidateArgs): void {
 			if (langCodes.has(raw)) continue;
 			// If it resolves as a real entity from this context, it's an
 			// entity wikilink — skip.
-			const r = resolveWikilink(raw, entities, fromCluster, clusterSet, universalSet);
+			const r = resolveLinkTarget(args, raw, fromCluster);
 			if (r.id !== null) continue;
 			// If it's ambiguous, the wikilink validator already emits that error —
 			// don't also emit a spurious "unknown language code" on top of it.
@@ -381,7 +417,7 @@ export function validateLangLinks(args: ValidateArgs): void {
 			// matches any entity anywhere in the graph, treat it as a
 			// cross-cluster entity wikilink and defer to validateEntityWikilinks.
 			if (r.reason === 'missing-in-cluster') {
-				const global = resolveWikilink(raw, entities, null, clusterSet, universalSet);
+				const global = resolveLinkTarget(args, raw, null);
 				if (global.id !== null) continue;
 				// Also skip if globally ambiguous — wikilink validator handles it.
 				if (global.reason === 'ambiguous') continue;

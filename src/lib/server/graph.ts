@@ -17,6 +17,7 @@ import type {
 import { folderLabels, kindsOf, titleCaseSlug } from '#lib/types.js';
 import { CONTENT_DIR } from './globals';
 import { buildEdges, loadAll, resolveWikilink } from './loader';
+import { collectFolderPaths } from './wikilinks';
 import {
 	buildLineageIndex,
 	lineageRelationIds,
@@ -157,6 +158,10 @@ export class Graph {
 	#clusters: Set<string> = new Set();
 	#universalFolders: Set<string> = new Set();
 	#timelines: Map<string, Timeline> = new Map();
+	/** Every folder a wikilink may point at (collections, timelines, implicit shelves). */
+	#linkableFolders: Map<string, true> = new Map();
+	/** folder path -> ids of entities whose prose links to it. */
+	#folderBacklinks: Map<string, Set<EntityId>> = new Map();
 	/** Ids of entities that are timeline dots; folder listings skip them. */
 	#dotEntityIds: Set<EntityId> = new Set();
 	#loaded = false;
@@ -210,6 +215,15 @@ export class Graph {
 			this.#clusters = clusters;
 			this.#universalFolders = universalFolders;
 			this.#timelines = timelines;
+			this.#linkableFolders = collectFolderPaths(entities.keys(), collections.keys(), timelines.keys());
+			this.#folderBacklinks = new Map();
+			for (const e of entities.values()) {
+				for (const folder of e.folderLinks ?? []) {
+					const from = this.#folderBacklinks.get(folder) ?? new Set<EntityId>();
+					from.add(e.id);
+					this.#folderBacklinks.set(folder, from);
+				}
+			}
 			this.#dotEntityIds = new Set(
 				[...timelines.values()].flatMap((tl) =>
 					tl.entries
@@ -531,6 +545,22 @@ export class Graph {
 			if (tlPath.startsWith(prefix)) return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Entities whose prose links to the folder `path` (a collection, shelf or
+	 * timeline). Entities that live inside the folder are left out, since the
+	 * page already lists them. Sorted by name.
+	 */
+	folderBacklinks(path: string): Entity[] {
+		const prefix = `${path}/`;
+		const out: Entity[] = [];
+		for (const id of this.#folderBacklinks.get(path) ?? []) {
+			if (id.startsWith(prefix)) continue;
+			const e = this.#entities.get(id);
+			if (e) out.push(e);
+		}
+		return out.sort((a, b) => a.meta.name.localeCompare(b.meta.name));
 	}
 
 	/**
@@ -964,9 +994,10 @@ export class Graph {
 	 * markdown renderer treats both as broken links.
 	 *
 	 * Entities are tried first. On miss, the same algorithm is
-	 * applied against the collections map, so wikilinks like
-	 * `[[the-three-cardinals]]` (a collection folder, not an
-	 * entity file) resolve to the collection's browse page.
+	 * applied against every folder (registered collections, timelines
+	 * and implicit shelves such as `foundation/mundus`), so wikilinks
+	 * like `[[the-three-cardinals]]` (a collection folder, not an
+	 * entity file) resolve to the folder's browse page.
 	 */
 	resolveLink(rawPath: string, fromCluster: string | null = null): EntityId | null {
 		const r = resolveWikilink(
@@ -979,7 +1010,7 @@ export class Graph {
 		if (r.id) return r.id;
 		const c = resolveWikilink(
 			rawPath,
-			this.#collections,
+			this.#linkableFolders,
 			fromCluster,
 			this.#clusters,
 			this.#universalFolders

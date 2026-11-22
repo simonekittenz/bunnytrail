@@ -60,6 +60,33 @@ export type SubcollectionTree = {
 export const ORBIT_KINDS = new Set(['member-of', 'orbits']);
 
 // ---------------------------------------------------------------------------
+// folderBacklinks — entities whose prose links to a folder
+// ---------------------------------------------------------------------------
+
+/**
+ * "Mentioned by" entries for a collection page: the entities that wikilink to
+ * any of `paths` (a collection page passes its own path; an aggregate page
+ * passes the folder's path in every cluster). Each entity appears once.
+ */
+export function folderBacklinks(paths: string[]) {
+	const seen = new Set<EntityId>();
+	const out: Array<{ id: EntityId; name: string; kind: string | null; typeLabel: string }> = [];
+	for (const path of paths) {
+		for (const e of graph.folderBacklinks(path)) {
+			if (seen.has(e.id)) continue;
+			seen.add(e.id);
+			out.push({
+				id: e.id,
+				name: e.meta.name,
+				kind: typeof e.meta.kind === 'string' ? e.meta.kind : null,
+				typeLabel: graph.folderLabels(e.type).singular
+			});
+		}
+	}
+	return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// ---------------------------------------------------------------------------
 // timelineTiles — timelines sitting directly inside one or more folders
 // ---------------------------------------------------------------------------
 

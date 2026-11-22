@@ -150,6 +150,7 @@ export interface Translations {
 	collection_eyebrow_collection: string;
 	collection_subshelves_aria: string;
 	collection_see_entity: string;
+	collection_mentioned_by: string;
 	collection_containers_aria: string;
 	collection_subtrees_aria: string;
 	collection_orbits_aria: string;
@@ -432,6 +433,7 @@ const en: Translations = {
 	collection_eyebrow_collection: 'Collection',
 	collection_subshelves_aria: 'Sub-shelves',
 	collection_see_entity: 'see entity →',
+	collection_mentioned_by: 'Mentioned by',
 	collection_containers_aria: 'Container entities',
 	collection_subtrees_aria: 'Subcollection trees',
 	collection_orbits_aria: 'Orbital hierarchy',
@@ -715,6 +717,7 @@ const nl: Translations = {
 	collection_eyebrow_collection: 'Collectie',
 	collection_subshelves_aria: 'Subschappen',
 	collection_see_entity: 'zie entiteit →',
+	collection_mentioned_by: 'Genoemd door',
 	collection_containers_aria: 'Containerentiteiten',
 	collection_subtrees_aria: 'Subcollectiebomen',
 	collection_orbits_aria: 'Orbitale hiërarchie',

@@ -5,6 +5,7 @@
 	import type { CollectionPageData, ContainerNode, OrbitNode } from './collectionPage.load';
 	import CollectionCard from '#lib/components/CollectionCard.svelte';
 	import EntityCard from '#lib/components/EntityCard.svelte';
+	import EntityLink from '#lib/components/EntityLink.svelte';
 	import PageHeader from '#lib/components/PageHeader.svelte';
 	import { buildKindTree, toRoman } from '#lib/types.js';
 	import { translateUrl } from '#lib/cluster.js';
@@ -829,6 +830,19 @@
 					{/each}
 				</div>
 			{/if}
+		{#if data.backlinks.length > 0}
+			<section class="mentioned-by" aria-labelledby="mentioned-by-heading">
+				<h2 id="mentioned-by-heading" class="mentioned-by__heading">{ui.collection_mentioned_by}</h2>
+				<ul class="mentioned-by__list">
+					{#each data.backlinks as card (card.id)}
+						<li>
+							<EntityLink id={card.id} name={card.name} summary={null} kind={card.kind} />
+							<span class="mentioned-by__type">· {card.typeLabel}</span>
+						</li>
+					{/each}
+				</ul>
+			</section>
+		{/if}
 		</div>
 		<!-- /.content -->
 

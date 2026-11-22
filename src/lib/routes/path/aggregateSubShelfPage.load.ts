@@ -6,6 +6,7 @@ import {
 	buildLoaderKindTree,
 	buildSubcollectionEntry,
 	buildSubcollectionTree,
+	folderBacklinks,
 	serialiseKinds,
 	timelineTiles,
 	toCard,
@@ -142,6 +143,7 @@ export function loadAggregateSubShelfPage(shelf: string, subShelf: string) {
 		subcollections: [...clusterSubcollections, ...childSubcollections],
 		// Timelines directly inside this sub-shelf in any cluster.
 		timelines: timelineTiles(clusterPaths),
+		backlinks: folderBacklinks(clusterPaths),
 		subShelves: [] as Array<{
 			type: string;
 			plural: string;

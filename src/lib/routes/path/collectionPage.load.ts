@@ -11,6 +11,7 @@ import {
 	buildSubcollectionTree,
 	compareCardRank,
 	labelForFolder,
+	folderBacklinks,
 	serialiseKinds,
 	timelineTiles,
 	toCard,
@@ -377,6 +378,8 @@ export async function loadCollectionPage(path: string) {
 		bodyHtml,
 		subcollections,
 		timelines,
+		// Entities elsewhere whose prose links to this folder.
+		backlinks: folderBacklinks([path]),
 		subShelves: [] as Array<{
 			type: string;
 			plural: string;

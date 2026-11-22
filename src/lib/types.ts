@@ -413,17 +413,22 @@ export function titleCaseSlug(slug: string): string {
 }
 
 /**
- * Naive singularize: operates on the last whitespace-separated token.
- * "Star Systems" → "Star System"; "Cities" → "City".
+ * Naive singularize of a label. Singularizes the head noun: the word before
+ * the first preposition (`of`, `in`, …) if there is one, else the last word.
+ * "Star Systems" → "Star System"; "Cities" → "City"; "Realms of Mundus" →
+ * "Realm of Mundus". Words ending in `-us` or `-is` ("Mundus", "Axis") are
+ * not plurals and stay as they are.
  */
 export function naiveSingular(word: string): string {
 	const parts = word.split(' ');
-	const last = parts[parts.length - 1];
+	const prep = parts.findIndex((p, i) => i > 0 && /^(?:of|in|on|at|from|for|to|with)$/i.test(p));
+	const head = prep === -1 ? parts.length - 1 : prep - 1;
+	const last = parts[head];
 	let singular = last;
 	if (/ies$/i.test(last)) singular = last.replace(/ies$/i, 'y');
 	else if (/ses$/i.test(last)) singular = last.replace(/es$/i, '');
-	else if (/s$/i.test(last) && !/ss$/i.test(last)) singular = last.replace(/s$/i, '');
-	parts[parts.length - 1] = singular;
+	else if (/s$/i.test(last) && !/(?:ss|us|is)$/i.test(last)) singular = last.replace(/s$/i, '');
+	parts[head] = singular;
 	return parts.join(' ');
 }
 
@@ -715,6 +720,12 @@ export interface Entity {
 	body: string;
 	/** Wikilink ids extracted from the body. */
 	wikilinks: EntityId[];
+	/**
+	 * Folder paths (collections, timelines, shelves) this entity's prose links to
+	 * with a wikilink. Set by validation; a folder link is not a graph edge, so
+	 * these stay out of `wikilinks`. Feeds "mentioned by" on collection pages.
+	 */
+	folderLinks?: EntityId[];
 	/**
 	 * Kind ids referenced from the body via `[[kinds/<id>]]` wikilinks.
 	 * Captured separately from `wikilinks` because they target the
