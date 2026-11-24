@@ -175,6 +175,7 @@ singular: Display name singular      # string | omit
 plural: Display name plural          # string | omit
 description: Short editorial note    # string | omit
 class: <kind-id>                     # string | omit — see below
+type: class                          # omit | class — entities of this kind are classes
 
 properties:
   <property-id>:                     # e.g. gender, notation
@@ -236,6 +237,15 @@ narrow the constraint further.
 The `class` chain on an entity (entity → `class` target → target's `class`
 target → …) is also used by the `governedBy` backing-edge check — see
 [`governedBy`](#governedby) above.
+
+### `type: class` on kinds
+
+`type: class` makes every entity of the kind (and of descendant kinds) a class
+definition, as if each carried `type: class`; an entity's own `type:` still
+wins. A class may itself carry `class:`, which makes it a subclass of its
+target. The target must be a class, and the chain must not loop. A class page
+lists the entities pointing at it under an **Instances** tab, or **Subclasses**
+when all of them are classes themselves.
 
 ## Multi-kinded entities
 

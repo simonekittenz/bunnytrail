@@ -48,13 +48,7 @@
 			: data.kindChip
 	);
 
-	const displayTitle = $derived(
-		data.entity.entityType === 'class'
-			? data.entity.plural
-				? data.entity.name + ' / ' + data.entity.plural
-				: data.entity.name + ' (class)'
-			: (data.entity.title ?? data.entity.name)
-	);
+	const displayTitle = $derived(data.entity.title ?? data.entity.name);
 
 	// Tabs: shown when the entity has classMates (instances) and/or statistics.
 	// "About" wraps all existing page content; "Instances" lists classMates as cards;
@@ -391,7 +385,7 @@
 				class:active={effectiveTab === 'instances'}
 					onclick={() => gotoTab('instances')}
 				>
-					{ui.entity_tab_instances}
+					{data.classMatesAreClasses ? ui.entity_tab_subclasses : ui.entity_tab_instances}
 				</button>
 			{/if}
 			{#if hasQualifierHolders}

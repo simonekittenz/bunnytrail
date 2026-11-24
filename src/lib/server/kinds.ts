@@ -585,6 +585,19 @@ function parseKindMeta(
 		}
 	}
 
+	// `type: class` marks every entity of the kind as a class definition.
+	const kindType = obj['type'];
+	if (kindType !== undefined && kindType !== null) {
+		if (kindType !== 'class') {
+			issues.push({
+				kind: 'invalid-yaml',
+				detail: `${relTo(yamlPath, rootDir)}: type must be 'class' (omit it for ordinary kinds)`
+			});
+		} else {
+			meta.type = 'class';
+		}
+	}
+
 	// eraBounded is a boolean flag.
 	const eraBounded = obj['eraBounded'];
 	if (eraBounded !== undefined && eraBounded !== null) {

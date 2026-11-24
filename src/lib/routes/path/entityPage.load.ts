@@ -491,6 +491,10 @@ export async function loadEntityPage(
 		rank: typeof e.meta.rank === 'number' ? e.meta.rank : null
 	}));
 
+	// When every member is itself a class, the tab lists subclasses.
+	const classMatesAreClasses =
+		classMateEntities.length > 0 && classMateEntities.every((e) => e.meta.type === 'class');
+
 	// Qualifier holders: entities that reference this entity in the `qualifier` field
 	// of one of their relations. Surfaces on qualifier-kind entity pages as a
 	// "Holders" tab — analogous to the "Instances" tab but driven by the
@@ -678,6 +682,7 @@ export async function loadEntityPage(
 		rankNav,
 		dotNav,
 		classMates,
+		classMatesAreClasses,
 		qualifierHolders,
 		statistics,
 		vocabulary,

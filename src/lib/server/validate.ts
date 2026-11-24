@@ -911,12 +911,12 @@ export function validateUnknownEntityFields(args: ValidateArgs): void {
  *
  * 1. `plural:` is only meaningful on `type: class` entities. On any other
  *    entity it is reported as a health issue.
- * 2. `class:` is only meaningful on `type: instance` (the default) entities.
- *    On a `type: class` entity it is ignored and reported.
- * 3. A `class:` field that resolves to a `type: instance` target is invalid —
- *    only `type: class` entities may be referenced via `class:`. This is
- *    reported in addition to (and independently of) the kind-constraint check
- *    in `validateClassField`.
+ * 2. `class:` is valid on any entity. On a `type: class` entity it makes the
+ *    entity a subclass of its target; the chain of `class:` pointers must
+ *    not loop.
+ * 3. A `class:` target must itself be `type: class`. Reported in addition
+ *    to (and independently of) the kind-constraint check in
+ *    `validateClassField`.
  */
 export function validateEntityTypeFields(args: ValidateArgs): void {
 	const { entities, issues } = args;
@@ -933,30 +933,32 @@ export function validateEntityTypeFields(args: ValidateArgs): void {
 			});
 		}
 
-		// Rule 2: `class:` only on type:instance
 		const cls = entity.meta.class;
-		if (typeof cls === 'string' && cls && entityType !== 'instance') {
+		if (typeof cls !== 'string' || !cls) continue;
+
+		// Rule 3: a `class:` target must itself be `type: class`
+		const target = entities.get(cls);
+		// Missing target is already caught by validateClassField (broken-link).
+		if (target && (target.meta.type ?? 'instance') !== 'class') {
 			issues.push({
 				kind: 'property-kind-mismatch',
 				entity: entity.id,
-				detail: `'class:' is only valid on 'type: instance' entities; this entity is 'type: ${entityType}'`
+				detail: `class target '${cls}' is 'type: instance'; only 'type: class' entities may be referenced via 'class:'`
 			});
 		}
 
-		// Rule 3: a `class:` target must itself be `type: class`
-		if (typeof cls === 'string' && cls && entityType === 'instance') {
-			const target = entities.get(cls);
-			if (target) {
-				const targetType = target.meta.type ?? 'instance';
-				if (targetType !== 'class') {
-					issues.push({
-						kind: 'property-kind-mismatch',
-						entity: entity.id,
-						detail: `class target '${cls}' is 'type: instance'; only 'type: class' entities may be referenced via 'class:'`
-					});
-				}
+		// Rule 2: the class chain must not loop
+		const seen = new Set<string>([entity.id]);
+		for (let cur: string | undefined = cls; cur; cur = entities.get(cur)?.meta.class) {
+			if (cur === entity.id || seen.has(cur)) {
+				issues.push({
+					kind: 'property-kind-mismatch',
+					entity: entity.id,
+					detail: `'class:' chain loops back through '${cur}'`
+				});
+				break;
 			}
-			// Missing target is already caught by validateClassField (broken-link).
+			seen.add(cur);
 		}
 	}
 }

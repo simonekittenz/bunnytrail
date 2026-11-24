@@ -76,6 +76,13 @@ export interface KindMeta {
 	 */
 	class?: string;
 	/**
+	 * `'class'` makes every entity of this kind (and any descendant kind)
+	 * a class definition, as if each carried `type: class`. An entity's
+	 * own `type:` still wins. Such an entity may carry `class:` itself,
+	 * which makes it a subclass of the entity it points at.
+	 */
+	type?: 'class';
+	/**
 	 * When `true`, entities of this kind (and any descendant kind) that
 	 * carry no explicit `era:` field are assigned the cluster's default
 	 * era at load time. This means they are included in (and filtered by)

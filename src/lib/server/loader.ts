@@ -158,6 +158,8 @@ export async function loadAll(
 	const registryResult = await loadKindRegistry();
 	for (const issue of registryResult.issues) issues.push(issue);
 
+	applyKindTypes(entities, registryResult.kinds);
+
 	const validateArgs = {
 		entities,
 		collections,
@@ -207,6 +209,29 @@ export async function loadAll(
 		universalFolders: universalSet,
 		timelines
 	};
+}
+
+/**
+ * Entities of a kind (or descendant kind) declared `type: class` become
+ * `type: class` entities, unless they set their own `type:`.
+ */
+export function applyKindTypes(
+	entities: Map<string, Entity>,
+	kindRegistry: Map<string, Kind>
+): void {
+	const isClassKind = (kindId: string): boolean => {
+		for (let cur: string | null = kindId; cur; ) {
+			const kind = kindRegistry.get(cur);
+			if (!kind) return false;
+			if (kind.meta.type === 'class') return true;
+			cur = kind.parent;
+		}
+		return false;
+	};
+	for (const entity of entities.values()) {
+		if (entity.meta.type !== undefined) continue;
+		if (kindsOf(entity.meta).some(isClassKind)) entity.meta.type = 'class';
+	}
 }
 
 /**

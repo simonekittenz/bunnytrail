@@ -72,6 +72,7 @@ export interface Translations {
 	entity_sections_aria: string;
 	entity_tab_about: string;
 	entity_tab_instances: string;
+	entity_tab_subclasses: string;
 	entity_tab_holders: string;
 	entity_tab_statistics: string;
 	entity_tab_vocabulary: string;
@@ -355,6 +356,7 @@ const en: Translations = {
 	entity_sections_aria: 'Entity sections',
 	entity_tab_about: 'About',
 	entity_tab_instances: 'Instances',
+	entity_tab_subclasses: 'Subclasses',
 	entity_tab_holders: 'Holders',
 	entity_tab_statistics: 'Statistics',
 	entity_tab_vocabulary: 'Vocabulary',
@@ -639,6 +641,7 @@ const nl: Translations = {
 	entity_sections_aria: 'Entiteitssecties',
 	entity_tab_about: 'Over',
 	entity_tab_instances: 'Voorkomens',
+	entity_tab_subclasses: 'Subklassen',
 	entity_tab_holders: 'Dragers',
 	entity_tab_statistics: 'Statistieken',
 	entity_tab_vocabulary: 'Woordenlijst',
